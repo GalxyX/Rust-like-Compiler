@@ -2,6 +2,7 @@
 #include <iostream>
 #include <variant>
 #include <vector>
+#include <filesystem>
 class InputBuffer
 {
 private:
@@ -11,12 +12,13 @@ private:
 	std::vector<size_t>line_breaks;	//删除注释后代码中换行下标
 	unsigned int index;				//扫描器当前指针，指向下一个将要读取位置
 public:
-	InputBuffer(const std::string path);
+	InputBuffer(const std::filesystem::path& path);
+	InputBuffer(const std::string& src);
 	void filter_comments();
 	char GetChar();
 	char Retract();
 	bool isEnd();
-	void FindOriPos(unsigned int& line, unsigned int& column);
+	void FindOriPos(int& line, int& column) const;
 };
 /********************************************************************************
 * Rust 每个值都有其确切的数据类型，总的来说可以分为两类：基本类型和复合类型。 基本类型意味着它们往往是一个最小化原子类型，无法解构为其它类型（一般意义上来说），由以下组成：
@@ -27,7 +29,7 @@ public:
 * 单元类型：即 () ，其唯一的值也是 ()
 * https://rustwiki.org/zh-CN/book/ch03-02-data-types.html
 ********************************************************************************/
-enum SymbolType { _i8, _u8, _i16, _u16, _i32, _u32, _i64, _u64, _i128, _u128, _isize, _usize, _f32, _f64, _bool, _char, _unit, _array };
+enum SymbolType { undefined, _i8, _u8, _i16, _u16, _i32, _u32, _i64, _u64, _i128, _u128, _isize, _usize, _f32, _f64, _bool, _char, _unit, _array };
 struct SymbolTableEntry {
 	size_t No;
 	std::string ID;
@@ -157,7 +159,7 @@ private:
 	bool IsLetter() const;							//布尔函数。功能： ch中为字母时返回.T.
 	bool IsDigit() const;							//布尔函数。功能： ch中为数字时返回.T.
 	enum TokenType Reserve() const;					//整型函数。功能：按strToken中字符串查保留字表；查到返回保留字编码; 否则返回0
-	size_t InsertId(/*string token, */enum SymbolType type = _i32);//函数。功能：将标识符插入符号表，返回符号表指针
+	size_t InsertId(/*string token*/);//函数。功能：将标识符插入符号表，返回符号表指针
 	Token tokenize();								//找到下一个单词符号
 	void ProcError();								//遇到无法识别字符串时错误提示
 public:

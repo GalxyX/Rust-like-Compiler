@@ -2,17 +2,21 @@
 #include <string>
 #include <fstream>
 using namespace std;
-InputBuffer::InputBuffer(const string path) :index(0)
+InputBuffer::InputBuffer(const filesystem::path& path) :index(0)
 {
 	ifstream readFile(path, ios::in);
 	if (!readFile.is_open())
 	{
 		cerr << "无法打开源文件: " << path << endl;
-		throw runtime_error("无法打开源文件: " + path);
+		throw runtime_error("无法打开源文件: " + path.string());
 	}
 	source.assign(istreambuf_iterator<char>(readFile), istreambuf_iterator<char>());
 	readFile.close();
-	//cout << source << endl;
+	cout << source << endl;
+}
+
+InputBuffer::InputBuffer(const string& src) :index(0), source(src)
+{
 }
 
 void InputBuffer::filter_comments()
@@ -98,21 +102,42 @@ void InputBuffer::filter_comments()
 				line_breaks.push_back(clean_code.size() - 1);
 		}
 	}
-	cout << clean_code << endl;
+	//处理未完全开始或未完成的注释
+	switch (curr) {
+	case normal:
+	case in_line_comment:
+		break;
+	case single_slash:
+		clean_code += '/';
+		break;
+	case in_block_comment:
+	case in_block_comment_halfend:
+	case in_block_comment_slash:
+		cerr << "词法分析错误：文件末尾有未结束的块注释" << endl;
+		break;
+	default:
+		break;
+	}
+
+	//cout << clean_code << endl;
 }
 
 char InputBuffer::GetChar()
 {
 	if (!isEnd())
-		index++;
-	return clean_code[index];
+		return clean_code[index++];
+	else
+		return clean_code[index];
 }
 
 char InputBuffer::Retract()
 {
-	if (index != 0)
-		index--;
-	return clean_code[index];
+	if (index == 0)
+		throw runtime_error("不应在指针为0时调用Retract函数：在未读取字符串时调用Retract函数");
+	if (--index == 0)
+		return clean_code[index];
+	else
+		return clean_code[index - 1];
 }
 
 bool InputBuffer::isEnd()
@@ -123,13 +148,68 @@ bool InputBuffer::isEnd()
 		return false;
 }
 
-void InputBuffer::FindOriPos(unsigned int& line, unsigned int& column)//找到当前index在源程序中的位置
+void InputBuffer::FindOriPos(int& line, int& column) const//找到当前index在源程序中的位置
 {
-	for (line = 0; line < line_breaks.size(); line++)
-		if (line_breaks[line] >= index)
+	if (clean_code.size() <= 0) {
+		line = column = -1;
+		return;
+	}
+	//找到index在第几行line
+	for (line = 0; line < int(line_breaks.size()); line++)
+		if (line_breaks[line] >= index - 1)
 			break;
+	if (line == line_breaks.size()) {
+		line = column = -1;
+		return;
+	}
 	//line此时为行号-1，出错行换行对应数组下标
-	line++;
+
+	//找到第line个换行在源代码中的位置ori_index
+	int line_remain = line;//要查找第几个换行（0即为不查找，第一行）
+	int ori_index = -1;//第line个换行在原始source中的索引
+	const char* start = source.data();
+	const char* end = start + source.size();
+	const char* ptr = start;
+	while (ptr < end && line_remain > 0) {
+		if (*ptr == '\r' || *ptr == '\n') {
+			if (*ptr == '\r' && ptr < end - 1 && *(ptr + 1) == '\n')
+				++ptr;
+			--line_remain;
+			if (line_remain == 0) {
+				ori_index = ptr - start;
+				break;
+			}
+		}
+		++ptr;
+	}
+	//找到index对应字符在本行的列序号column
+	int temp_index = line == 0 ? -1 : line_breaks[line - 1];//去除注释clean_code的可移动指针
+	int temp_ori_index = ori_index;//原始source的可移动指针
+	++temp_index;//查找第一行时索引为-1，跳过-1
+	++temp_ori_index;
+	if (temp_ori_index < int(source.size()) && source[temp_ori_index] == '\n' && temp_index < int(clean_code.size()) && source[temp_index] == '\n') {//处理\r\n
+		++temp_ori_index;
+		++temp_index;
+	}
+	bool find = false;//开始查找
+	while (temp_index <= int(index - 1) && temp_ori_index < int(source.size()) && source[temp_ori_index] != '\r' && source[temp_ori_index] != '\n')
+		if (source[temp_ori_index] == clean_code[temp_index]) {
+			if (temp_index == index - 1) {
+				find = true;
+				break;
+			}
+			++temp_ori_index;
+			++temp_index;
+		}
+		else
+			++temp_ori_index;
+
+	if (find) {
+		++line;
+		column = temp_ori_index - ori_index;
+	}
+	else
+		line = column = -1;
 }
 
 Token::Token(TokenType type, TokenValue value) :type(type), value(value)
@@ -200,14 +280,14 @@ void Scanner::Clear()
 	strToken.clear();
 }
 
-size_t Scanner::InsertId(/*string token, */enum SymbolType type)//字符串为空也存了进去，未检验是否为空
+size_t Scanner::InsertId(/*string token*/)//字符串为空也存了进去，未检验是否为空
 {
 	size_t IdNum = 0;
 	for (; IdNum < SymbolTable.size(); IdNum++) {
 		if (SymbolTable[IdNum].ID == strToken)
 			return IdNum;
 	}
-	SymbolTable.push_back({ IdNum, strToken, NULL, type });//////待解决：词法分析怎么知道addr、type是什么？
+	SymbolTable.push_back({ IdNum, strToken, NULL, undefined });//addr、type在语法分析模块添加
 	return IdNum;
 }
 
@@ -471,12 +551,12 @@ Token Scanner::tokenize()
 
 void Scanner::ProcError()
 {
-	unsigned int line, column;
+	int line, column;
 	input.FindOriPos(line, column);
 	if (strToken.empty())
-		cerr << "词法分析错误：无法识别的标记：第" << line << "行：ASCII" << int(ch);
+		cerr << "词法分析错误：无法识别的标记（" << line << "，" << column << "）ASCII" << int(ch) << endl;
 	else
-		cerr << "词法分析错误：应输入声明：第" << line << "行：" << strToken;
+		cerr << "词法分析错误：应输入声明（" << line << "，" << column - strToken.size() << "）" << strToken << endl;
 	return;
 }
 
