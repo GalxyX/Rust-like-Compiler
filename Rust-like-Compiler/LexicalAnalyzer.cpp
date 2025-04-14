@@ -127,7 +127,7 @@ char InputBuffer::GetChar()
 	if (!isEnd())
 		return clean_code[index++];
 	else
-		return clean_code[index];
+		return clean_code[index];//index指向'\0'之后时，始终返回'\0'
 }
 
 char InputBuffer::Retract()
@@ -135,14 +135,14 @@ char InputBuffer::Retract()
 	if (index == 0)
 		throw runtime_error("不应在指针为0时调用Retract函数：在未读取字符串时调用Retract函数");
 	if (--index == 0)
-		return clean_code[index];
+		return -2;//暂时返回-2
 	else
 		return clean_code[index - 1];
 }
 
 bool InputBuffer::isEnd()
 {
-	if (index >= clean_code.size())
+	if (index > clean_code.size())//算入'\0'以处理最后一个字符
 		return true;
 	else
 		return false;
