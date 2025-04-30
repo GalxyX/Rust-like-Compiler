@@ -12,7 +12,7 @@ InputBuffer::InputBuffer(const filesystem::path& path) :index(0)
 	}
 	source.assign(istreambuf_iterator<char>(readFile), istreambuf_iterator<char>());
 	readFile.close();
-	cout << source << endl;
+	//cout << source << endl;
 }
 
 InputBuffer::InputBuffer(const string& src) :index(0), source(src)
@@ -93,6 +93,9 @@ void InputBuffer::filter_comments()
 		if (currch == '/')
 			curr = single_slash;
 		else {
+			bool notEmpty = !clean_code.empty();
+			if (notEmpty && (currch == ' ' && clean_code[clean_code.size() - 1] == ' ' || currch == '\t' && clean_code[clean_code.size() - 1] == '\t'))//É¾³ý¶àÓà¿Õ¸ñ¡¢ÖÆ±í·û
+				continue;
 			clean_code += currch;
 			if (currch == '\r' && i < sourceSize - 1 && source[i + 1] == '\n') {
 				line_breaks.push_back(clean_code.size() - 1);
@@ -127,7 +130,7 @@ char InputBuffer::GetChar()
 	if (!isEnd())
 		return clean_code[index++];
 	else
-		return clean_code[index];//indexÖ¸Ïò'\0'Ö®ºóÊ±£¬Ê¼ÖÕ·µ»Ø'\0'
+		return '\0';//indexÖ¸Ïò'\0'Ö®ºóÊ±£¬Ê¼ÖÕ·µ»Ø'\0'
 }
 
 char InputBuffer::Retract()
@@ -148,7 +151,7 @@ bool InputBuffer::isEnd()
 		return false;
 }
 
-void InputBuffer::FindOriPos(int& line, int& column) const//ÕÒµ½µ±Ç°indexÔÚÔ´³ÌÐòÖÐµÄÎ»ÖÃ
+void InputBuffer::FindOriPos(int& line, int& column) const//ÕÒµ½µ±Ç°indexÔÚÔ´³ÌÐòÖÐµÄÎ»ÖÃ£¨columnÎªÈ¥³ý×¢ÊÍºóµÄÁÐ£©
 {
 	if (clean_code.size() <= 0) {
 		line = column = -1;
@@ -184,41 +187,69 @@ void InputBuffer::FindOriPos(int& line, int& column) const//ÕÒµ½µ±Ç°indexÔÚÔ´³ÌÐ
 	}
 	//ÕÒµ½index¶ÔÓ¦×Ö·ûÔÚ±¾ÐÐµÄÁÐÐòºÅcolumn
 	int temp_index = line == 0 ? -1 : line_breaks[line - 1];//È¥³ý×¢ÊÍclean_codeµÄ¿ÉÒÆ¶¯Ö¸Õë
-	int temp_ori_index = ori_index;//Ô­Ê¼sourceµÄ¿ÉÒÆ¶¯Ö¸Õë
-	++temp_index;//²éÕÒµÚÒ»ÐÐÊ±Ë÷ÒýÎª-1£¬Ìø¹ý-1
-	++temp_ori_index;
-	if (temp_ori_index < int(source.size()) && source[temp_ori_index] == '\n' && temp_index < int(clean_code.size()) && source[temp_index] == '\n') {//´¦Àí\r\n
-		++temp_ori_index;
-		++temp_index;
-	}
-	bool find = false;//¿ªÊ¼²éÕÒ
-	while (temp_index <= int(index - 1) && temp_ori_index < int(source.size()) && source[temp_ori_index] != '\r' && source[temp_ori_index] != '\n')
-		if (source[temp_ori_index] == clean_code[temp_index]) {
-			if (temp_index == index - 1) {
-				find = true;
-				break;
-			}
-			++temp_ori_index;
-			++temp_index;
-		}
-		else
-			++temp_ori_index;
+	//int temp_ori_index = ori_index;//Ô­Ê¼sourceµÄ¿ÉÒÆ¶¯Ö¸Õë
+	//++temp_index;//²éÕÒµÚÒ»ÐÐÊ±Ë÷ÒýÎª-1£¬Ìø¹ý-1
+	//++temp_ori_index;
+	//if (temp_ori_index < int(source.size()) && source[temp_ori_index] == '\n' && temp_index < int(clean_code.size()) && source[temp_index] == '\n') {//´¦Àí\r\n
+	//	++temp_ori_index;
+	//	++temp_index;
+	//}
+	//bool find = false;//¿ªÊ¼²éÕÒ
+	//while (temp_index <= int(index - 1) && temp_ori_index < int(source.size()) && source[temp_ori_index] != '\r' && source[temp_ori_index] != '\n')
+	//	if (source[temp_ori_index] == clean_code[temp_index]) {
+	//		if (temp_index == index - 1) {
+	//			find = true;
+	//			break;
+	//		}
+	//		++temp_ori_index;
+	//		++temp_index;
+	//	}
+	//	else
+	//		++temp_ori_index;
 
-	if (find) {
-		++line;
-		column = temp_ori_index - ori_index;
-	}
-	else
-		line = column = -1;
+	//if (find) {
+	//	++line;
+	//	column = temp_ori_index - ori_index;
+	//}
+	//else
+	//	line = column = -1;
+	++line;
+	column = index - 1 - temp_index;
 }
 
-Token::Token(TokenType type, TokenValue value) :type(type), value(value)
+Token::Token(TokenType type, int line, int column, int length, TokenValue value) :type(type), value(value), line(line), column(column), length(length)
 {
+}
+
+Token& Token::operator=(const Token& other)
+{
+	if (this != &other) {
+		this->type = other.type;
+		this->value = other.value;
+		this->line = other.line;
+		this->column = other.column;
+		this->length = other.length;
+	}
+	return *this;
+}
+
+const char* TokenTypeToString(enum TokenType type) {
+	// Éú³ÉÃû³Æ×Ö·û´®Êý×é
+	const char* TokenTypeNames[] = {
+	#define X(name) #name,
+		TOKEN_TYPES
+	#undef X
+	};
+	int index = static_cast<int>(type);
+	if (index >= 0 && index <= sizeof(TokenTypeNames) / sizeof(char*))
+		return TokenTypeNames[index];
+	return OutOfRangeTokenType;
 }
 
 const string Scanner::ReservedWordsTable[] = { "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "i128", "u128",
 												"isize", "usize", "f32", "f64", "bool", "char","unit", "array",
-												"let", "if", "else","while", "return", "mut", "fn", "for", "in", "loop", "break", "continue" };//ÓëTokenTypeµÚÒ»ÐÐÄÚÈÝÍêÈ«Æ¥Åä£¬Ó¦Í¬²½ÐÞ¸Ä
+												"let", "if", "else","while", "return", "mut", "fn", "for", "in", "loop", "break", "continue",
+												"true", "false" };//ÓëTokenTypeµÚÒ»ÐÐÄÚÈÝÍêÈ«Æ¥Åä£¬Ó¦Í¬²½ÐÞ¸Ä
 
 Scanner::Scanner(InputBuffer& inputbuffer) :input(inputbuffer), ch('\0')
 {
@@ -291,20 +322,22 @@ size_t Scanner::InsertId(/*string token*/)//×Ö·û´®Îª¿ÕÒ²´æÁË½øÈ¥£¬Î´¼ìÑéÊÇ·ñÎª¿Õ
 	return IdNum;
 }
 
-Token Scanner::tokenize()
+Token Scanner::scan()
 {
 	Clear();
 	enum TokenType code;
 	size_t value;
 	GetChar();
 	GetBC();
+	int line, column;//·ûºÅµÄÆðÊ¼Î»ÖÃ£¨ÎÞ×¢ÊÍ´úÂëÖÐ£©
+	input.FindOriPos(line, column);
 	//Èý×Ö·ûÔËËã·û
 	if (ch == '<') {				//<<=
 		GetChar();
 		if (ch == '<') {
 			GetChar();
 			if (ch == '=')
-				return Token(LeftShiftAssign);
+				return Token(LeftShiftAssign, line, column, 3);
 			else
 				Retract();
 		}
@@ -315,7 +348,7 @@ Token Scanner::tokenize()
 		if (ch == '>') {
 			GetChar();
 			if (ch == '=')
-				return Token(RightShiftAssign);
+				return Token(RightShiftAssign, line, column, 3);
 			else
 				Retract();
 		}
@@ -325,143 +358,108 @@ Token Scanner::tokenize()
 	if (ch == '=') {			//== =>
 		GetChar();
 		if (ch == '=')				//ÎÞÂÛºóÐøÊÇ·ñÓÐÆäËüÄÚÈÝ£¬Ö»Òª¶Áµ½==¾ÍÈ¡¸Ã==£¬ºóÐø°´ÐÂÄÚÈÝ·ÖÎö
-			return Token(Equality);
+			return Token(Equality, line, column, 2);
 		else if (ch == '>')
-			return Token(Arrowmatch);
+			return Token(Arrowmatch, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '>') {			//>= >>
 		GetChar();
 		if (ch == '=')				//ÎÞÂÛºóÐøÊÇ·ñÓÐÆäËüÄÚÈÝ£¬Ö»Òª¶Áµ½>=¾ÍÈ¡¸Ã>=£¬ºóÐø°´ÐÂÄÚÈÝ·ÖÎö
-			return Token(GreaterOrEqual);
+			return Token(GreaterOrEqual, line, column, 2);
 		else if (ch == '>')
-			return Token(RightShift);
+			return Token(RightShift, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '<') {			//<= <<
 		GetChar();
 		if (ch == '=')
-			return Token(LessOrEqual);
+			return Token(LessOrEqual, line, column, 2);
 		else if (ch == '<')
-			return Token(LeftShift);
+			return Token(LeftShift, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '!') {			//!=
 		GetChar();
 		if (ch == '=')
-			return Token(Inequality);
+			return Token(Inequality, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '-') {			//->
 		GetChar();
 		if (ch == '>')
-			return Token(ArrowOperator);
+			return Token(ArrowOperator, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '.') {			//..
 		GetChar();
 		if (ch == '.')
-			return Token(RangeOperator);
+			return Token(RangeOperator, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '%') {			//%=
 		GetChar();
 		if (ch == '=')
-			return Token(ModuloAssign);
+			return Token(ModuloAssign, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '&') {			//&= &&
 		GetChar();
 		if (ch == '=')
-			return Token(BitAndAssign);
+			return Token(BitAndAssign, line, column, 2);
 		else if (ch == '&')
-			return Token(LogicalAnd);
+			return Token(LogicalAnd, line, column, 2);
 		else
 			Retract();
 	}
-	//else if (ch == '&') {			//&&
-	//	GetChar();
-	//	if (ch == '&')
-	//		return Token(LogicalAnd);
-	//	else
-	//		Retract();
-	//}
 	else if (ch == '|') {			//|= ||
 		GetChar();
 		if (ch == '=')
-			return Token(BitOrAssign);
+			return Token(BitOrAssign, line, column, 2);
 		else if (ch == '|')
-			return Token(LogicalOr);
+			return Token(LogicalOr, line, column, 2);
 		else
 			Retract();
 	}
-	//else if (ch == '|') {			//||
-	//	GetChar();
-	//	if (ch == '|')
-	//		return Token(LogicalOr);
-	//	else
-	//		Retract();
-	//}
 	else if (ch == '*') {			//*=
 		GetChar();
 		if (ch == '=')
-			return Token(MultiplicationAssign);
+			return Token(MultiplicationAssign, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '+') {			//+=
 		GetChar();
 		if (ch == '=')
-			return Token(AdditionAssign);
+			return Token(AdditionAssign, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '-') {			//-=
 		GetChar();
 		if (ch == '=')
-			return Token(SubtractionAssign);
+			return Token(SubtractionAssign, line, column, 2);
 		else
 			Retract();
 	}
 	else if (ch == '/') {			///=
 		GetChar();
 		if (ch == '=')
-			return Token(DivisionAssign);
+			return Token(DivisionAssign, line, column, 2);
 		else
 			Retract();
 	}
-	//else if (ch == '<') {			//<<
-	//	GetChar();
-	//	if (ch == '<')
-	//		return Token(LeftShift);
-	//	else
-	//		Retract();
-	//}
-	//else if (ch == '=') {			//=>
-	//	GetChar();
-	//	if (ch == '>')
-	//		return Token(Arrowmatch);
-	//	else
-	//		Retract();
-	//}
-	//else if (ch == '>') {			//>>
-	//	GetChar();
-	//	if (ch == '>')
-	//		return Token(RightShift);
-	//	else
-	//		Retract();
-	//}
 	else if (ch == '^') {			//^=
 		GetChar();
 		if (ch == '=')
-			return Token(BitXorAssign);
+			return Token(BitXorAssign, line, column, 2);
 		else
 			Retract();
 	}
@@ -475,10 +473,10 @@ Token Scanner::tokenize()
 		code = Reserve();
 		if (code == None) {
 			value = InsertId();
-			return Token(Identifier, value);
+			return Token(Identifier, line, column, strToken.length(), value);
 		}
 		else
-			return Token(code);
+			return Token(code, line, column, strToken.length());
 	}
 	//ÕûÐÍÊýÖµ
 	else if (IsDigit()) {
@@ -487,76 +485,164 @@ Token Scanner::tokenize()
 			GetChar();
 		}
 		Retract();
-		return Token(i32, stoi(strToken));//Ä¿Ç°½öÊ¶±ði32³£Êý£¬ÈÔÐèÌí¼ÓÆäËüÀàÐÍÊýÖµµÄÊ¶±ð
+		return Token(i32_, line, column, strToken.length(), stoi(strToken));//Ä¿Ç°½öÊ¶±ði32³£Êý£¬ÈÔÐèÌí¼ÓÆäËüÀàÐÍÊýÖµµÄÊ¶±ð
 	}
 	//µ¥×Ö·ûÔËËã·û
 	else if (ch == '=')
-		return Token(Assignment);
+		return Token(Assignment, line, column, 1);
 	else if (ch == '+')
-		return Token(Addition);
+		return Token(Addition, line, column, 1);
 	else if (ch == '-')
-		return Token(Subtraction);
+		return Token(Subtraction, line, column, 1);
 	else if (ch == '*')
-		return Token(Multiplication);
+		return Token(Multiplication, line, column, 1);
 	else if (ch == '/')
-		return Token(Division);
+		return Token(Division, line, column, 1);
 	else if (ch == '>')
-		return Token(GreaterThan);
+		return Token(GreaterThan, line, column, 1);
 	else if (ch == '<')
-		return Token(LessThan);
+		return Token(LessThan, line, column, 1);
 	else if (ch == '(')
-		return Token(ParenthesisL);
+		return Token(ParenthesisL, line, column, 1);
 	else if (ch == ')')
-		return Token(ParenthesisR);
+		return Token(ParenthesisR, line, column, 1);
 	else if (ch == '{')
-		return Token(CurlyBraceL);
+		return Token(CurlyBraceL, line, column, 1);
 	else if (ch == '}')
-		return Token(CurlyBraceR);
+		return Token(CurlyBraceR, line, column, 1);
 	else if (ch == '[')
-		return Token(SquareBracketL);
+		return Token(SquareBracketL, line, column, 1);
 	else if (ch == ']')
-		return Token(SquareBracketR);
+		return Token(SquareBracketR, line, column, 1);
 	else if (ch == ';')
-		return Token(Semicolon);
+		return Token(Semicolon, line, column, 1);
 	else if (ch == ':')
-		return Token(Colon);
+		return Token(Colon, line, column, 1);
 	else if (ch == ',')
-		return Token(Comma);
+		return Token(Comma, line, column, 1);
 	else if (ch == '.')
-		return Token(DotOperator);
+		return Token(DotOperator, line, column, 1);
 	else if (ch == '!')
-		return Token(Not);
+		return Token(Not, line, column, 1);
 	else if (ch == '%')
-		return Token(Modulo);
+		return Token(Modulo, line, column, 1);
 	else if (ch == '&')
-		return Token(BitAnd);
+		return Token(BitAnd, line, column, 1);
 	else if (ch == '|')
-		return Token(BitOr);
+		return Token(BitOr, line, column, 1);
 	else if (ch == '?')
-		return Token(ErrorPropagation);
+		return Token(ErrorPropagation, line, column, 1);
 	else if (ch == '@')
-		return Token(PatternBinding);
+		return Token(PatternBinding, line, column, 1);
 	else if (ch == '^')
-		return Token(BitXor);
-	else if (ch == '\"')
-		return Token(DoubleQuote);
-	else if (ch == '\'')
-		return Token(SingleQuote);
+		return Token(BitXor, line, column, 1);
+	else if (ch == '\"') {
+		GetChar();
+		while (ch != '\"') {
+			if (ch == '\0') {
+				ProcError("Î´ÖÕÖ¹µÄ×Ö·û´®");
+				return Token(DoubleQuote, line, column, 1);
+			}
+			else if (ch == '\\') {
+				GetChar();
+				if (ch == 'n' || ch == 't' || ch == 'r' || ch == '\\' || ch == '\"' || ch == '\'') {//×ªÒå·û
+					if (ch == 'n')
+						ch = '\n';
+					else if (ch == 't')
+						ch = '\t';
+					else if (ch == 'r')
+						ch = '\r';
+					else if (ch == '\\')
+						ch = '\\';
+					else if (ch == '\"')
+						ch = '\"';
+					else if (ch == '\'')
+						ch = '\'';
+					Concat();
+					GetChar();
+				}
+				else if (ch == '\r' || ch == '\n') {//\ºó½Ó»»ÐÐ
+					if (ch == '\r') {
+						GetChar();
+						if (ch == '\n')
+							GetChar();
+					}
+					else if (ch == '\n')
+						GetChar();
+					while (ch == ' ')
+						GetChar();
+				}
+				//\ºó½Ó·Ç»»ÐÐ
+				else {
+					Retract();
+					Concat();
+					GetChar();
+				}
+			}
+			else if (ch == '\r' || ch == '\n') {//Ö±½Ó»»ÐÐ
+				Concat();
+				GetChar();
+				if (ch == ' ')
+					Concat();
+				while (ch == ' ')
+					GetChar();
+			}
+			else {
+				Concat();
+				GetChar();
+			}
+		}
+		return Token(string_, line, column, strToken.length(), strToken);
+	}
+	else if (ch == '\'') {
+		GetChar();
+		while (ch != '\'') {
+			if (ch == '\\') {
+				GetChar();
+				if (ch == 'n')
+					ch = '\n';
+				else if (ch == 't')
+					ch = '\t';
+				else if (ch == 'r')
+					ch = '\r';
+				else if (ch == '\\')
+					ch = '\\';
+				else if (ch == '\"')
+					ch = '\"';
+				else if (ch == '\'')
+					ch = '\'';
+				else {
+					ProcError("·Ç·¨µÄ×ªÒå·û", line, column);
+					return Token(SingleQuote, line, column, 1);
+				}
+				GetChar();
+			}
+			if (ch == '\r' || ch == '\n') {
+				ProcError("Î´ÖÕÖ¹µÄ×Ö·û³£Á¿", line, column);
+				return Token(SingleQuote, line, column, 1);
+			}
+			else {
+				Concat();
+				GetChar();
+			}
+		}
+		return Token(char_, line, column, strToken.length(), ch);
+	}
 	else if (ch == '\0')
-		return Token(End);
+		return Token(End, line, column, 1);
 	else
-		ProcError();
-	return Token(None);
+		ProcError(strToken.empty() ? "´Ê·¨·ÖÎö´íÎó£ºÎÞ·¨Ê¶±ðµÄ±ê¼Ç" : "´Ê·¨·ÖÎö´íÎó£ºÓ¦ÊäÈëÉùÃ÷", line, column);
+	return Token(None, line, column, strToken.length());
 }
 
-void Scanner::ProcError()
+void Scanner::ProcError(const string errorMessage, int line, int column) const
 {
-	int line, column;
-	input.FindOriPos(line, column);
+	if (line == -1 || column == -1)
+		input.FindOriPos(line, column);
 	if (strToken.empty())
-		cerr << "´Ê·¨·ÖÎö´íÎó£ºÎÞ·¨Ê¶±ðµÄ±ê¼Ç£¨" << line << "£¬" << column << "£©ASCII" << int(ch) << endl;
+		cerr << errorMessage << "£¨" << line << "£¬" << column << "£©ASCII" << int(ch) << endl;
 	else
-		cerr << "´Ê·¨·ÖÎö´íÎó£ºÓ¦ÊäÈëÉùÃ÷£¨" << line << "£¬" << column - strToken.size() << "£©" << strToken << endl;
+		cerr << errorMessage << line << "£¬" << column - strToken.size() << "£©" << strToken << endl;
 	return;
 }
 
@@ -564,7 +650,7 @@ void Scanner::ProcError()
 void Scanner::LexicalAnalysis()
 {
 	while (!input.isEnd())
-		tokens.push_back(tokenize());
+		tokens.push_back(scan());
 	return;
 }
 
