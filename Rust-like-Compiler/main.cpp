@@ -53,7 +53,7 @@ json LR1ItemsJson(const Parser& parser)
 	json itemsets_json = json::array();
 	for (size_t i = 0; i < itemsets.size(); i++) {
 		json itemset_json = json::object();
-		itemset_json["id"] = "I" + i;
+		itemset_json["id"] = "I" + to_string(i);
 
 		json items = json::array();//[单个LR1项目的每个表达式]
 		for (const auto& item : itemsets[i].items) {
@@ -91,7 +91,7 @@ json ActionTableJson(const Parser& parser)
 	json action_table_json = json::array();
 	for (size_t i = 0; i < actionTable.size(); i++) {// 遍历所有状态
 		json row = json::object();
-		row["state"] = "I" + i;
+		row["state"] = "I" + to_string(i);
 
 		json actions = json::object();
 		// 遍历所有终结符（包括空终结符）
@@ -130,7 +130,7 @@ json GotoTableJson(const Parser& parser)
 	json goto_table_json = json::array();
 	for (size_t i = 0; i < gotoTable.size(); i++) {//遍历所有状态
 		json row = json::object();
-		row["state"] = "I" + i;
+		row["state"] = "I" + to_string(i);
 
 		json goto_entries = json::object();
 		// 遍历所有非终结符
@@ -174,6 +174,18 @@ json ReduceProductionsJson(const Parser& parser)
 	}
 	return reduce_prods_json;
 }
+json ParseErrorsJson(const Parser& parser)
+{
+	json errors = json::array();
+	for (const auto& err : parser.GetParseErrors()) {
+		json obj;
+		obj["line"] = err.line;
+		obj["column"] = err.column;
+		obj["message"] = err.message;
+		errors.push_back(obj);
+	}
+	return errors;
+}
 
 int main() {
 	//从标准输入读取整个程序，以EOF结尾
@@ -208,6 +220,8 @@ int main() {
 	result["gototable"] = GotoTableJson(parser);
 	// 获取规约产生式序列
 	result["reduceProductions"] = ReduceProductionsJson(parser);
+	// 输出语法分析错误
+	result["parseErrors"] = ParseErrorsJson(parser);
 
 	cout << result.dump(2) << endl;
 	return 0;

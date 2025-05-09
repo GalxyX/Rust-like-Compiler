@@ -7,7 +7,7 @@ InputBuffer::InputBuffer(const filesystem::path& path) :index(0)
 	ifstream readFile(path, ios::in);
 	if (!readFile.is_open())
 	{
-		cerr << "无法打开源文件: " << path << endl;
+		DEBUG_CERR << "无法打开源文件: " << path << endl;
 		throw runtime_error("无法打开源文件: " + path.string());
 	}
 	source.assign(istreambuf_iterator<char>(readFile), istreambuf_iterator<char>());
@@ -116,7 +116,7 @@ void InputBuffer::filter_comments()
 	case in_block_comment:
 	case in_block_comment_halfend:
 	case in_block_comment_slash:
-		cerr << "词法分析错误：文件末尾有未结束的块注释" << endl;
+		DEBUG_CERR << "词法分析错误：文件末尾有未结束的块注释" << endl;
 		break;
 	default:
 		break;
@@ -640,9 +640,9 @@ void Scanner::ProcError(const string errorMessage, int line, int column) const
 	if (line == -1 || column == -1)
 		input.FindOriPos(line, column);
 	if (strToken.empty())
-		cerr << errorMessage << "（" << line << "，" << column << "）ASCII" << int(ch) << endl;
+		DEBUG_CERR << errorMessage << "（" << line << "，" << column << "）ASCII" << int(ch) << endl;
 	else
-		cerr << errorMessage << line << "，" << column - strToken.size() << "）" << strToken << endl;
+		DEBUG_CERR << errorMessage << line << "，" << column - strToken.size() << "）" << strToken << endl;
 	return;
 }
 

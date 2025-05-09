@@ -55,6 +55,14 @@ struct ActionTableEntry
 	bool operator==(const ActionTableEntry& other) const;
 };
 
+//语法分析错误提示
+struct ParseError {
+	int line;
+	int column;
+	int length;
+	std::string message;
+};
+
 class Parser
 {
 	//static const enum TokenType EPSILON = static_cast<enum TokenType>(999);
@@ -67,6 +75,7 @@ class Parser
 	std::vector<std::vector<ActionTableEntry>> actionTable;							//横坐标Itemsets下标，纵坐标TokenType值
 	std::vector<std::vector<int>> gotoTable;										//横坐标Itemsets下标，纵坐标nonTerminals下标
 	std::vector<Production> reduceProductionLists;									//规约过程的产生式
+	std::vector<ParseError> parseErrors;											//归约过程中遇到的错误
 	void GetToken();																//调用词法分析器读取下一个token并存储到look
 	void LoadGrammar(const std::string filepath);									//读入文件中所有产生式至productions
 	void augmentProduction();														//拓广文法，将productions的第一个产生式左部作为拓广文法右部
@@ -79,6 +88,7 @@ class Parser
 	void addReduceEntry(int ItemsetsIndex);											//为LR1项目在actionTable添加reduce表项
 	void writeActionTable(int itemset, int terminal, const ActionTableEntry& entry);//写actionTable，处理冲突，主要内容为冲突时输出提示
 	void Items();																	//根据文法productions生成所有LR1项目集
+	void AddParseError(int line, int column, int length, const std::string& message);//将归约过程中遇到的错误存入parseErrors
 public:
 	Parser(Scanner& lexer, const std::string filepath);
 	void SyntaxAnalysis();															//语法分析，按照归约顺序将使用的产生式存储在reduceProductionLists
@@ -90,5 +100,6 @@ public:
 	const std::vector<std::vector<int>>& GetGotoTable() const;						//返回{Goto表}gotoTable
 	void printParsingTables() const;												//打印展示LR1分析表：{Action表}actionTable和{Goto表}gotoTable
 	const std::vector<Production>& getReduceProductionLists() const;				//返回{规约过程的产生式}reduceProductionLists
+	const std::vector<ParseError>& GetParseErrors() const;							//返回{归约过程的错误}parseErrors
 	void printSyntaxTree() const;													//打印语法树
 };

@@ -3,6 +3,15 @@
 #include <variant>
 #include <vector>
 #include <filesystem>
+// 定义此宏以启用调试输出，注释掉此行以禁用调试输出
+#define ENABLE_NOTING_OUTPUT
+
+#ifdef ENABLE_NOTING_OUTPUT
+#define DEBUG_CERR cerr
+#else
+#define DEBUG_CERR if(0) cerr
+#endif // ENABLE_NOTING_OUTPUT
+
 class InputBuffer
 {
 private:

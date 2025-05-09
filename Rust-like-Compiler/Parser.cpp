@@ -80,7 +80,7 @@ void Parser::LoadGrammar(const string filepath)
 	ifstream readFile(filepath, ios::in);
 	if (!readFile.is_open())
 	{
-		cerr << "无法打开语法产生式文件: " << filepath << endl;
+		DEBUG_CERR << "无法打开语法产生式文件: " << filepath << endl;
 		throw runtime_error("无法打开语法产生式文件: " + filepath);
 	}
 	//提取产生式
@@ -93,7 +93,7 @@ void Parser::LoadGrammar(const string filepath)
 		//找到左右分隔符第一个->
 		size_t arrowPos = line.find("->");
 		if (arrowPos == string::npos) {
-			cerr << "忽略格式不正确的行" << line << endl;
+			DEBUG_CERR << "忽略格式不正确的行" << line << endl;
 			continue;
 		}
 		//提取左部
@@ -137,15 +137,6 @@ void Parser::augmentProduction()
 		throw runtime_error("无产生式，无法生成拓广文法");
 	vector<Production>::iterator it = productions.begin();
 	productions.insert(it, Production(GetNonTerminal(""), vector<Symbol>{ it->left }));
-	//cout << "增广的产生式：" << endl;
-	//for (size_t i = 0; i < productions.size(); i++) {
-	//	const Production& p = productions[i];
-	//	cout << i << ": " << p.left.name << " -> ";
-	//	for (const Symbol& symbol : p.right) {
-	//		cout << symbol.name << " ";
-	//	}
-	//	cout << endl;
-	//}
 }
 
 const Symbol Parser::GetNonTerminal(const string name)
@@ -415,61 +406,62 @@ void Parser::writeActionTable(int itemset, int terminal, const ActionTableEntry&
 		return;
 	}
 	else if (currEntry.act == Action::accept || entry.act == Action::accept) {//不可能的冲突
-		cerr << "LR1分析表accept冲突，应检查逻辑";
+		DEBUG_CERR << "LR1分析表accept冲突，应检查逻辑" << endl;
 		return;
 	}
 	else if (entry.act == Action::error) {//不可能的冲突
-		cerr << "不应向LR1分析表中填入error，应检查逻辑";
+		DEBUG_CERR << "不应向LR1分析表中填入error，应检查逻辑" << endl;
 		return;
 	}
 	else if (currEntry.act == Action::shift && entry.act == Action::shift) {//不可能的冲突
-		cerr << "LR1分析表移进-移进冲突，应检查逻辑";
+		DEBUG_CERR << "LR1分析表移进-移进冲突，应检查逻辑" << endl;
 		return;
 	}
 	//处理正常情况下可能产生的冲突：归约-归约冲突与移进-归约冲突，可以使用优先级规则或报告冲突
 	//输出当前状态集信息
-	cerr << "当前状态项集 I" << itemset << ":" << endl;
+	DEBUG_CERR << "当前状态项集 I" << itemset << ":" << endl;
 	for (const LR1Item& item : Itemsets[itemset].items) {
 		const Production& prod = productions[item.productionIndex];
-		cerr << "  " << prod.left.name << " -> ";
+		DEBUG_CERR << "  " << prod.left.name << " -> ";
 		for (size_t j = 0; j < prod.right.size(); j++) {
-			if (j == item.dotPosition) cerr << "· ";
-			cerr << prod.right[j].name << " ";
+			if (j == item.dotPosition)
+				DEBUG_CERR << "· ";
+			DEBUG_CERR << prod.right[j].name << " ";
 		}
 		if (item.dotPosition == prod.right.size())
-			cerr << "·";
-		cerr << ", " << TokenTypeToString(item.lookahead) << endl;
+			DEBUG_CERR << "·";
+		DEBUG_CERR << ", " << TokenTypeToString(item.lookahead) << endl;
 	}
 	//输出共同的冲突信息
-	cerr << "状态项集 I" << itemset << " 针对符号 " << TokenTypeToString(TokenType(terminal)) << " 发生";
+	DEBUG_CERR << "状态项集 I" << itemset << " 针对符号 " << TokenTypeToString(TokenType(terminal)) << " 发生";
 	//归约-归约冲突
 	if (currEntry.act == Action::reduce && entry.act == Action::reduce) {//归约-归约冲突
-		cerr << "LR1分析表归约-归约冲突" << endl;
-		cerr << "	规约操作1: 使用产生式 " << productions[currEntry.num].left.name << " -> ";
+		DEBUG_CERR << "LR1分析表归约-归约冲突" << endl;
+		DEBUG_CERR << "	规约操作1: 使用产生式 " << productions[currEntry.num].left.name << " -> ";
 		for (const Symbol& sym : productions[currEntry.num].right)
-			cerr << sym.name << " ";
-		cerr << endl << "	规约操作2: 使用产生式 " << productions[entry.num].left.name << " -> ";
+			DEBUG_CERR << sym.name << " ";
+		DEBUG_CERR << endl << "	规约操作2: 使用产生式 " << productions[entry.num].left.name << " -> ";
 		for (const Symbol& sym : productions[entry.num].right)
-			cerr << sym.name << " ";
-		cerr << endl << "解决方案: 归约/归约冲突时，选择在规约中列在前面的那个冲突产生式" << endl;
+			DEBUG_CERR << sym.name << " ";
+		DEBUG_CERR << endl << "解决方案: 归约/归约冲突时，选择在规约中列在前面的那个冲突产生式" << endl;
 		if (entry.num < currEntry.num) {
-			cerr << "	保留规约操作2" << endl;
+			DEBUG_CERR << "	保留规约操作2" << endl << endl;
 			currEntry = entry;
 		}
 		else
-			cerr << "	保留规约操作1" << endl;
+			DEBUG_CERR << "	保留规约操作1" << endl << endl;
 		return;
 	}
 	//移进-归约冲突
 	int shiftnum = currEntry.act == Action::shift ? currEntry.num : entry.num;
 	int reducenum = currEntry.act == Action::reduce ? currEntry.num : entry.num;
-	cerr << "LR1分析表移进-归约冲突" << endl;
-	cerr << "移进操作: 移进到状态 " << shiftnum << endl;
-	cerr << "规约操作: 使用产生式 " << productions[reducenum].left.name << " -> ";
+	DEBUG_CERR << "LR1分析表移进-归约冲突" << endl;
+	DEBUG_CERR << "移进操作: 移进到状态 " << shiftnum << endl;
+	DEBUG_CERR << "规约操作: 使用产生式 " << productions[reducenum].left.name << " -> ";
 	for (const Symbol& sym : productions[reducenum].right)
-		cerr << sym.name << " ";
-	cerr << endl;
-	cerr << "解决方案: 移入/归约冲突时总是选择移入" << endl;
+		DEBUG_CERR << sym.name << " ";
+	DEBUG_CERR << endl;
+	DEBUG_CERR << "解决方案: 移入/归约冲突时总是选择移入" << endl << endl;
 	if (currEntry.act == Action::reduce && entry.act == Action::shift)//移进-归约冲突
 		currEntry = entry; //选择移进操作
 	//else if (currEntry.act == Action::shift && entry.act == Action::reduce)//移进-归约冲突
@@ -524,6 +516,11 @@ void Parser::Items()
 	}
 }
 
+void Parser::AddParseError(int line, int column, int length, const std::string& message)
+{
+	parseErrors.push_back({ line, column, length, message });
+}
+
 Parser::Parser(Scanner& lexer, const string filepath) :lexer(lexer), look(TokenType::None)
 {
 	LoadGrammar(filepath);
@@ -566,20 +563,22 @@ void Parser::SyntaxAnalysis()
 		else if (action.act == Action::error) {
 			//错误展示
 			lexer.ProcError(string(TokenTypeToString(look.type)) + "类别符号不符合给定的语法规则");
+			//记录错误
+			AddParseError(look.line, look.column, look.length, string(TokenTypeToString(look.type)) + "类别符号不符合给定的语法规则");
 			//展示此状态可接受的词法单元类型
-			cerr << "预期的词法单元: ";
+			DEBUG_CERR << "预期的词法单元: ";
 			bool hasExpected = false;
 			for (int i = 1; i <= int(TokenType::End); i++)
 				if (actionTable[s][i].act != Action::error) {
 					if (hasExpected)
-						cerr << ", ";
-					cerr << TokenTypeToString(TokenType(i));
+						DEBUG_CERR << ", ";
+					DEBUG_CERR << TokenTypeToString(TokenType(i));
 					hasExpected = true;
 				}
 			if (!hasExpected)
-				cerr << "无法确定";
-			cerr << endl;
-			cerr << "跳过当前词法单元" << endl << endl;
+				DEBUG_CERR << "无法确定";
+			DEBUG_CERR << endl;
+			DEBUG_CERR << "跳过当前词法单元" << endl << endl;
 			if (look.type == TokenType::End)
 				break;
 			GetToken();
@@ -596,6 +595,7 @@ void Parser::SyntaxAnalysis()
 
 const std::vector<Production>& Parser::GetProductions() const
 {
+#ifdef ENABLE_NOTING_OUTPUT
 	//输出查看
 	//打印读取的产生式，用于调试
 	cout << "读取的产生式：" << endl;
@@ -607,6 +607,7 @@ const std::vector<Production>& Parser::GetProductions() const
 		}
 		cout << endl;
 	}
+#endif
 	return productions;
 }
 
@@ -617,6 +618,7 @@ const unordered_map<string, unsigned int>& Parser::GetNonTerminals() const
 
 const vector<set<enum TokenType>>& Parser::GetFirsts() const
 {
+#ifdef ENABLE_NOTING_OUTPUT
 	cout << "所有符号的FIRST：" << endl;
 	//终结符
 	cout << "对于所有终结符, FIRST(t) = {t}" << endl;
@@ -640,11 +642,13 @@ const vector<set<enum TokenType>>& Parser::GetFirsts() const
 		}
 		cout << " }" << endl;
 	}
+#endif
 	return firsts;
 }
 
 const vector<LR1ItemSet>& Parser::GetItemsets() const
 {
+#ifdef ENABLE_NOTING_OUTPUT
 	cout << "=============== LR1项集族 ===============" << endl;
 	for (size_t i = 0; i < Itemsets.size(); i++) {
 		cout << "I" << i << ":" << endl;
@@ -668,6 +672,7 @@ const vector<LR1ItemSet>& Parser::GetItemsets() const
 		cout << endl;
 	}
 	cout << "=======================================" << endl;
+#endif
 	return Itemsets;
 }
 
@@ -747,6 +752,11 @@ void Parser::printParsingTables() const
 const std::vector<Production>& Parser::getReduceProductionLists() const
 {
 	return reduceProductionLists;
+}
+
+const std::vector<ParseError>& Parser::GetParseErrors() const
+{
+	return parseErrors;
 }
 
 void Parser::printSyntaxTree() const
