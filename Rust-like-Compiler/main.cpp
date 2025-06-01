@@ -207,8 +207,9 @@ int main() {
 	InputBuffer syntaxInput(program);
 	syntaxInput.filter_comments();
 	Scanner parserScanner(syntaxInput);
-	string grammar = "rust/grammar.txt"; // 假设语法文件路径
-	Parser parser(parserScanner, grammar);
+	//string grammar = "rust/grammar.txt"; // 假设语法文件路径
+	//Parser parser(parserScanner, grammar);
+	Parser parser(parserScanner, "rust/parser.galp", true);
 	parser.SyntaxAnalysis();
 	//输出FIRST集合
 	result["firsts"] = FirstsJson(parser);
@@ -278,9 +279,12 @@ int main(int argc, char** argv)
 	InputBuffer* inputp = new(nothrow)InputBuffer(path);
 	inputp->filter_comments();
 	Scanner pscanner(*inputp);
-	Parser newparser(pscanner, grammar);
+	//Parser newparser(pscanner, grammar);
+	Parser newparser(pscanner, "rust/parser.galp", true);
+	//newparser.saveToFile("rust/parser.galp");
 	newparser.SyntaxAnalysis();
 	newparser.printSyntaxTree();
+	delete inputp;
 	return 0;
 }
 #endif // BACKEND

@@ -516,7 +516,7 @@ void Parser::Items()
 	}
 }
 
-void Parser::AddParseError(int line, int column, int length, const std::string& message)
+void Parser::AddParseError(int line, int column, int length, const string& message)
 {
 	parseErrors.push_back({ line, column, length, message });
 }
@@ -524,14 +524,13 @@ void Parser::AddParseError(int line, int column, int length, const std::string& 
 Parser::Parser(Scanner& lexer, const string filepath) :lexer(lexer), look(TokenType::None)
 {
 	LoadGrammar(filepath);
+	augmentProduction();
+	ComputeFirsts();
+	Items();
 }
 
 void Parser::SyntaxAnalysis()
 {
-	augmentProduction();
-	ComputeFirsts();
-	Items();
-
 	stack<int> stateStack;//状态栈
 	stack<Symbol> tokenStack;//符号栈
 	stateStack.push(0);//拓广文法的起始变元对应LR1项目集开始
@@ -593,7 +592,7 @@ void Parser::SyntaxAnalysis()
 	}
 }
 
-const std::vector<Production>& Parser::GetProductions() const
+const vector<Production>& Parser::GetProductions() const
 {
 #ifdef ENABLE_NOTING_OUTPUT
 	//输出查看
@@ -749,12 +748,12 @@ void Parser::printParsingTables() const
 	cout << "=======================================" << endl;
 }
 
-const std::vector<Production>& Parser::getReduceProductionLists() const
+const vector<Production>& Parser::getReduceProductionLists() const
 {
 	return reduceProductionLists;
 }
 
-const std::vector<ParseError>& Parser::GetParseErrors() const
+const vector<ParseError>& Parser::GetParseErrors() const
 {
 	return parseErrors;
 }
@@ -836,4 +835,398 @@ void Parser::printSyntaxTree() const
 		cout << "无法构建语法树！\n";
 
 	cout << "=======================================" << endl;
+}
+
+template<typename T>
+void writeBasicType(ofstream& out, const T& value)
+{
+	out.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T>
+void readBasicType(ifstream& in, T& value)
+{
+	in.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+void writeString(ofstream& out, const string& str)
+{
+	size_t size = str.size();
+	writeBasicType(out, size);
+	if (size > 0)
+		out.write(str.c_str(), size);
+}
+
+void readString(ifstream& in, string& str)
+{
+	size_t size;
+	readBasicType(in, size);
+	if (size > 0) {
+		vector<char> buffer(size);
+		in.read(buffer.data(), size);
+		str.assign(buffer.data(), size);
+	}
+	else
+		str.clear();
+}
+
+// 序列化Symbol结构
+void writeSymbol(ofstream& out, const Symbol& symbol)
+{
+	writeBasicType(out, symbol.isTerminal);
+	if (symbol.isTerminal)
+		writeBasicType(out, symbol.terminalId);
+	else
+		writeBasicType(out, symbol.nonterminalId);
+	writeString(out, symbol.name);
+}
+
+// 反序列化Symbol结构
+Symbol readSymbol(ifstream& in)
+{
+	bool isTerminal;
+	readBasicType(in, isTerminal);
+
+	if (isTerminal) {
+		TokenType terminalId;
+		readBasicType(in, terminalId);
+		string name;
+		readString(in, name);
+		Symbol symbol(terminalId);
+		symbol.name = name; // 确保名称正确设置
+		return symbol;
+	}
+	else {
+		unsigned int nonterminalId;
+		string name;
+		readBasicType(in, nonterminalId);
+		readString(in, name);
+		return Symbol(nonterminalId, name);
+	}
+}
+
+// 序列化Production结构
+void writeProduction(ofstream& out, const Production& prod)
+{
+	writeSymbol(out, prod.left);
+
+	size_t rightSize = prod.right.size();
+	writeBasicType(out, rightSize);
+
+	for (const auto& sym : prod.right)
+		writeSymbol(out, sym);
+}
+
+// 反序列化Production结构
+Production readProduction(ifstream& in)
+{
+	Symbol left = readSymbol(in);
+
+	size_t rightSize;
+	readBasicType(in, rightSize);
+
+	vector<Symbol> right;
+	right.reserve(rightSize);
+
+	for (size_t i = 0; i < rightSize; ++i)
+		right.push_back(readSymbol(in));
+
+	return Production(left, right);
+}
+
+// 序列化LR1Item结构
+void writeLR1Item(ofstream& out, const LR1Item& item)
+{
+	writeBasicType(out, item.productionIndex);
+	writeBasicType(out, item.dotPosition);
+	writeBasicType(out, item.lookahead);
+}
+
+// 反序列化LR1Item结构
+LR1Item readLR1Item(ifstream& in)
+{
+	int prodIndex, dotPos;
+	TokenType lookahead;
+
+	readBasicType(in, prodIndex);
+	readBasicType(in, dotPos);
+	readBasicType(in, lookahead);
+
+	return LR1Item(prodIndex, dotPos, lookahead);
+}
+
+// 序列化LR1ItemSet结构
+void writeLR1ItemSet(ofstream& out, const LR1ItemSet& itemset)
+{
+	size_t itemsSize = itemset.items.size();
+	writeBasicType(out, itemsSize);
+
+	for (const auto& item : itemset.items)
+		writeLR1Item(out, item);
+}
+
+// 反序列化LR1ItemSet结构
+LR1ItemSet readLR1ItemSet(ifstream& in)
+{
+	size_t itemsSize;
+	readBasicType(in, itemsSize);
+
+	LR1ItemSet itemset;
+	for (size_t i = 0; i < itemsSize; ++i)
+		itemset.items.insert(readLR1Item(in));
+
+	return itemset;
+}
+
+// 序列化ActionTableEntry结构
+void writeActionTableEntry(ofstream& out, const ActionTableEntry& entry)
+{
+	writeBasicType(out, entry.act);
+	writeBasicType(out, entry.num);
+}
+
+// 反序列化ActionTableEntry结构
+ActionTableEntry readActionTableEntry(ifstream& in)
+{
+	ActionTableEntry entry;
+	readBasicType(in, entry.act);
+	readBasicType(in, entry.num);
+	return entry;
+}
+
+// 序列化ParseError结构
+void writeParseError(ofstream& out, const ParseError& error)
+{
+	writeBasicType(out, error.line);
+	writeBasicType(out, error.column);
+	writeBasicType(out, error.length);
+	writeString(out, error.message);
+}
+
+// 反序列化ParseError结构
+ParseError readParseError(ifstream& in)
+{
+	ParseError error;
+	readBasicType(in, error.line);
+	readBasicType(in, error.column);
+	readBasicType(in, error.length);
+	readString(in, error.message);
+	return error;
+}
+
+// 序列化 TokenType 集合
+void writeTokenTypeSet(ofstream& out, const set<TokenType>& tokenSet)
+{
+	size_t setSize = tokenSet.size();
+	writeBasicType(out, setSize);
+
+	for (const auto& token : tokenSet)
+		writeBasicType(out, token);
+}
+
+// 反序列化 TokenType 集合
+set<TokenType> readTokenTypeSet(ifstream& in)
+{
+	size_t setSize;
+	readBasicType(in, setSize);
+
+	set<TokenType> tokenSet;
+	for (size_t i = 0; i < setSize; ++i) {
+		TokenType token;
+		readBasicType(in, token);
+		tokenSet.insert(token);
+	}
+
+	return tokenSet;
+}
+
+void Parser::saveToFile(const string& filepath) const
+{
+	ofstream out(filepath, ios::binary);
+	if (!out.is_open()) {
+		throw runtime_error("无法打开文件进行写入: " + filepath);
+	}
+
+	try {
+		// 1. 保存 productions
+		size_t prodSize = productions.size();
+		writeBasicType(out, prodSize);
+		for (const auto& prod : productions) {
+			writeProduction(out, prod);
+		}
+
+		// 2. 保存 nonTerminals
+		size_t ntSize = nonTerminals.size();
+		writeBasicType(out, ntSize);
+		for (const auto& [name, id] : nonTerminals) {
+			writeString(out, name);
+			writeBasicType(out, id);
+		}
+
+		// 3. 保存 firsts
+		size_t firstsSize = firsts.size();
+		writeBasicType(out, firstsSize);
+		for (const auto& tokenSet : firsts) {
+			writeTokenTypeSet(out, tokenSet);
+		}
+
+		// 4. 保存 Itemsets
+		size_t itemsetsSize = Itemsets.size();
+		writeBasicType(out, itemsetsSize);
+		for (const auto& itemset : Itemsets) {
+			writeLR1ItemSet(out, itemset);
+		}
+
+		// 5. 保存 actionTable
+		size_t actionTableSize = actionTable.size();
+		writeBasicType(out, actionTableSize);
+		for (const auto& row : actionTable) {
+			size_t rowSize = row.size();
+			writeBasicType(out, rowSize);
+			for (const auto& entry : row) {
+				writeActionTableEntry(out, entry);
+			}
+		}
+
+		// 6. 保存 gotoTable
+		size_t gotoTableSize = gotoTable.size();
+		writeBasicType(out, gotoTableSize);
+		for (const auto& row : gotoTable) {
+			size_t rowSize = row.size();
+			writeBasicType(out, rowSize);
+			for (int target : row) {
+				writeBasicType(out, target);
+			}
+		}
+
+		// 7. 保存 reduceProductionLists
+		size_t reduceListSize = reduceProductionLists.size();
+		writeBasicType(out, reduceListSize);
+		for (const auto& prod : reduceProductionLists) {
+			writeProduction(out, prod);
+		}
+
+		// 8. 保存 parseErrors
+		size_t errorsSize = parseErrors.size();
+		writeBasicType(out, errorsSize);
+		for (const auto& error : parseErrors) {
+			writeParseError(out, error);
+		}
+
+		out.close();
+	}
+	catch (const exception& e) {
+		out.close();
+		throw runtime_error(string("序列化Parser对象失败: ") + e.what());
+	}
+}
+
+Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(lexer), look(TokenType::None)
+{
+	if (fromFile) {
+		ifstream in(filepath, ios::binary);
+		if (!in.is_open()) {
+			throw runtime_error("无法打开文件进行读取: " + filepath);
+		}
+
+		try {
+			// 1. 读取 productions
+			size_t prodSize;
+			readBasicType(in, prodSize);
+			productions.clear();
+			productions.reserve(prodSize);
+			for (size_t i = 0; i < prodSize; ++i) {
+				productions.push_back(readProduction(in));
+			}
+
+			// 2. 读取 nonTerminals
+			size_t ntSize;
+			readBasicType(in, ntSize);
+			nonTerminals.clear();
+			for (size_t i = 0; i < ntSize; ++i) {
+				string name;
+				unsigned int id;
+				readString(in, name);
+				readBasicType(in, id);
+				nonTerminals[name] = id;
+			}
+
+			// 3. 读取 firsts
+			size_t firstsSize;
+			readBasicType(in, firstsSize);
+			firsts.clear();
+			firsts.resize(firstsSize);
+			for (size_t i = 0; i < firstsSize; ++i) {
+				firsts[i] = readTokenTypeSet(in);
+			}
+
+			// 4. 读取 Itemsets
+			size_t itemsetsSize;
+			readBasicType(in, itemsetsSize);
+			Itemsets.clear();
+			Itemsets.reserve(itemsetsSize);
+			for (size_t i = 0; i < itemsetsSize; ++i) {
+				Itemsets.push_back(readLR1ItemSet(in));
+			}
+
+			// 5. 读取 actionTable
+			size_t actionTableSize;
+			readBasicType(in, actionTableSize);
+			actionTable.clear();
+			actionTable.resize(actionTableSize);
+			for (size_t i = 0; i < actionTableSize; ++i) {
+				size_t rowSize;
+				readBasicType(in, rowSize);
+				actionTable[i].resize(rowSize);
+				for (size_t j = 0; j < rowSize; ++j) {
+					actionTable[i][j] = readActionTableEntry(in);
+				}
+			}
+
+			// 6. 读取 gotoTable
+			size_t gotoTableSize;
+			readBasicType(in, gotoTableSize);
+			gotoTable.clear();
+			gotoTable.resize(gotoTableSize);
+			for (size_t i = 0; i < gotoTableSize; ++i) {
+				size_t rowSize;
+				readBasicType(in, rowSize);
+				gotoTable[i].resize(rowSize);
+				for (size_t j = 0; j < rowSize; ++j) {
+					readBasicType(in, gotoTable[i][j]);
+				}
+			}
+
+			// 7. 读取 reduceProductionLists
+			size_t reduceListSize;
+			readBasicType(in, reduceListSize);
+			reduceProductionLists.clear();
+			reduceProductionLists.reserve(reduceListSize);
+			for (size_t i = 0; i < reduceListSize; ++i) {
+				reduceProductionLists.push_back(readProduction(in));
+			}
+
+			// 8. 读取 parseErrors
+			size_t errorsSize;
+			readBasicType(in, errorsSize);
+			parseErrors.clear();
+			parseErrors.reserve(errorsSize);
+			for (size_t i = 0; i < errorsSize; ++i) {
+				parseErrors.push_back(readParseError(in));
+			}
+
+			in.close();
+		}
+		catch (const exception& e) {
+			in.close();
+			throw runtime_error(string("反序列化Parser对象失败: ") + e.what());
+		}
+	}
+	else {
+		// 原来的加载逻辑
+		LoadGrammar(filepath);
+		augmentProduction();
+		ComputeFirsts();
+		Items();
+	}
 }

@@ -102,4 +102,6 @@ public:
 	const std::vector<Production>& getReduceProductionLists() const;				//返回{规约过程的产生式}reduceProductionLists
 	const std::vector<ParseError>& GetParseErrors() const;							//返回{归约过程的错误}parseErrors
 	void printSyntaxTree() const;													//打印语法树
+	void saveToFile(const std::string& filepath) const;
+	Parser(Scanner& lexer, const std::string& filepath, bool fromFile);
 };
