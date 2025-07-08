@@ -543,6 +543,7 @@ void Parser::SyntaxAnalysis()
 		if (action.act == Action::shift) {//ACTION[s,a]=移入新状态（sx）
 			stateStack.push(action.num);//将新状态压入栈中
 			tokenStack.push(look.type);
+			semanticer.mkleaf(look);
 			GetToken();
 		}
 		else if (action.act == Action::reduce) {//ACTION[s,a]=归约A→β
@@ -556,9 +557,12 @@ void Parser::SyntaxAnalysis()
 			stateStack.push(gotoTable[t][Aid]);//将GOTO[t,A]压入栈中
 			tokenStack.push(Symbol(Aid, productions[action.num].left.name));
 			reduceProductionLists.push_back(productions[action.num]);//输出产生式A→β
+			semanticer.analyze(productions[action.num]);
 		}
-		else if (action.act == Action::accept)
+		else if (action.act == Action::accept) {
+			semanticer.addJumpToMain();
 			break;//语法分析完成
+		}
 		else if (action.act == Action::error) {
 			//错误展示
 			lexer.ProcError(string(TokenTypeToString(look.type)) + "类别符号不符合给定的语法规则");
@@ -1229,4 +1233,14 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 		ComputeFirsts();
 		Items();
 	}
+}
+
+const std::vector<Quadruple>& Parser::GetqList() const
+{
+	return semanticer.GetqList();
+}
+
+const std::vector<ParseError>& Parser::GetSemanticErrors() const
+{
+	return semanticer.GetSemanticErrors();
 }

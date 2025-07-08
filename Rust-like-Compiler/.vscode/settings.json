@@ -69,6 +69,7 @@
         "stack": "cpp",
         "unordered_map": "cpp",
         "xhash": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "valarray": "cpp"
     }
 }

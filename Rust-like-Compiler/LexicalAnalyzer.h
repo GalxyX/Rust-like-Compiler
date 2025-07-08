@@ -4,7 +4,7 @@
 #include <vector>
 #include <filesystem>
 // 定义此宏以启用调试输出，注释掉此行以禁用调试输出
-#define ENABLE_NOTING_OUTPUT
+//#define ENABLE_NOTING_OUTPUT
 
 #ifdef ENABLE_NOTING_OUTPUT
 #define DEBUG_CERR cerr
@@ -28,22 +28,6 @@ public:
 	char Retract();
 	bool isEnd();
 	void FindOriPos(int& line, int& column) const;
-};
-/********************************************************************************
-* Rust 每个值都有其确切的数据类型，总的来说可以分为两类：基本类型和复合类型。 基本类型意味着它们往往是一个最小化原子类型，无法解构为其它类型（一般意义上来说），由以下组成：
-* 数值类型：有符号整数 (i8, i16, i32, i64, isize)、 无符号整数 (u8, u16, u32, u64, usize) 、浮点数 (f32, f64)、以及有理数、复数
-* 字符串：字符串字面量和字符串切片 &str
-* 布尔类型：true 和 false
-* 字符类型：表示单个 Unicode 字符，存储为 4 个字节
-* 单元类型：即 () ，其唯一的值也是 ()
-* https://rustwiki.org/zh-CN/book/ch03-02-data-types.html
-********************************************************************************/
-enum SymbolType { undefined, _i8, _u8, _i16, _u16, _i32, _u32, _i64, _u64, _i128, _u128, _isize, _usize, _f32, _f64, _bool, _char, _unit, _array };
-struct SymbolTableEntry {
-	size_t No;
-	std::string ID;
-	void* Addr;
-	enum SymbolType type;
 };
 
 /********************************************************************************
@@ -166,7 +150,6 @@ private:
 	InputBuffer& input;								//输入缓冲区
 	char ch;										//存放当前读入字符
 	std::string strToken;							//存放单词的字符串
-	std::vector<SymbolTableEntry> SymbolTable;		//标识符表
 	std::vector<Token> tokens;						//所有单词符号
 	void GetChar();									//取字符过程。取下一字符到ch ；搜索指针 + 1
 	void GetBC();									//滤除空字符过程。功能：判ch = 空 ? 若是，则调用GetChar
@@ -176,12 +159,10 @@ private:
 	bool IsLetter() const;							//布尔函数。功能： ch中为字母时返回.T.
 	bool IsDigit() const;							//布尔函数。功能： ch中为数字时返回.T.
 	enum TokenType Reserve() const;					//整型函数。功能：按strToken中字符串查保留字表；查到返回保留字编码; 否则返回0
-	size_t InsertId(/*string token*/);				//函数。功能：将标识符插入符号表，返回符号表指针
 public:
 	Scanner(InputBuffer& inputbuffer);
 	void LexicalAnalysis();							//启动词法分析
 	Token scan();									//找到下一个单词符号
 	void ProcError(const std::string errorMessage, int line = -1, int column = -1) const;		//遇到无法识别字符串时错误提示
 	const std::vector<Token>& GetTokens() const;
-	const std::vector<SymbolTableEntry>& GetSymbolTable() const;
 };

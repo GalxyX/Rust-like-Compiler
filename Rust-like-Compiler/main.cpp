@@ -5,7 +5,7 @@ using namespace std;
 
 //#define BACKEND
 #ifdef BACKEND
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 using json = nlohmann::json;
 json TokensJson(const vector<Token>& tokens)
 {
@@ -15,7 +15,7 @@ json TokensJson(const vector<Token>& tokens)
 		token_obj["type"] = TokenTypeToString(token.type);
 		// 根据token类型选择正确的值类型
 		if (token.type == Identifier)
-			token_obj["value"] = get<unsigned int>(token.value);
+			token_obj["value"] = get<string>(token.value);
 		else if (token.type == i32_)
 			token_obj["value"] = get<int>(token.value);
 		else if (token.type == char_)
@@ -186,6 +186,33 @@ json ParseErrorsJson(const Parser& parser)
 	}
 	return errors;
 }
+json QuadruplesJson(const Parser &parser)
+{
+	json quadruples = json::array();
+    int address = 100; // 起始地址，与START_STMT_ADDR一致
+    for (const auto& q : parser.GetqList()) {
+        json obj = json::object();
+		obj["address"] = address;
+		obj["op"] = q.op;
+		obj["arg1"] = q.arg1;
+		obj["arg2"] = q.arg2;
+		obj["result"] = q.result;
+		quadruples.push_back(obj);
+    }
+    return quadruples;
+}
+json SemanticErrorsJson(const Parser &parser)
+{
+	json errors = json::array();
+    for (const auto& error : parser.GetSemanticErrors()) {
+        json obj;
+		obj["line"] = error.line;
+		obj["column"] = error.column;
+		obj["message"] = error.message;
+		errors.push_back(obj);
+    }
+    return errors;
+}
 
 int main() {
 	//从标准输入读取整个程序，以EOF结尾
@@ -198,7 +225,6 @@ int main() {
 	//词法分析
 	Scanner scanner(input);
 	scanner.LexicalAnalysis();
-	vector<SymbolTableEntry> symbolTable = scanner.GetSymbolTable();
 	vector<Token> tokens = scanner.GetTokens();
 	//输出词法分析结果
 	json result;
@@ -207,9 +233,9 @@ int main() {
 	InputBuffer syntaxInput(program);
 	syntaxInput.filter_comments();
 	Scanner parserScanner(syntaxInput);
-	//string grammar = "rust/grammar.txt"; // 假设语法文件路径
-	//Parser parser(parserScanner, grammar);
-	Parser parser(parserScanner, "rust/parser.galp", true);
+	string grammar = "rust/grammar.txt"; // 假设语法文件路径
+	Parser parser(parserScanner, grammar);
+	//Parser parser(parserScanner, "rust/parser.galp", true);
 	parser.SyntaxAnalysis();
 	//输出FIRST集合
 	result["firsts"] = FirstsJson(parser);
@@ -223,6 +249,10 @@ int main() {
 	result["reduceProductions"] = ReduceProductionsJson(parser);
 	// 输出语法分析错误
 	result["parseErrors"] = ParseErrorsJson(parser);
+	// 输出四元式
+	result["quadruples"] = QuadruplesJson(parser);
+	// 输出语义错误
+	result["semanticErrors"] = SemanticErrorsJson(parser);
 
 	cout << result.dump(2) << endl;
 	return 0;
@@ -245,11 +275,11 @@ int main(int argc, char** argv)
 
 			Scanner newscanner(newinput);
 			newscanner.LexicalAnalysis();
-			vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
+			//vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
 			vector<Token> tokens = newscanner.GetTokens();
-			for (int i = 0; i < tokens.size(); ++i)
+			for (unsigned int i = 0; i < tokens.size(); ++i)
 				if (tokens[i].type == Identifier)
-					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<unsigned int>(tokens[i].value) << ")：" << SymbolTable[get<unsigned int>(tokens[i].value)].ID << endl;
+					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")："/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/ << endl;
 				else
 					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')' << endl;
 		}
@@ -259,21 +289,21 @@ int main(int argc, char** argv)
 
 	Scanner newscanner(*inputb);
 	newscanner.LexicalAnalysis();
-	vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
+	//vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
 	vector<Token> tokens = newscanner.GetTokens();
-	// 在打印tokens信息时添加位置信息
-	for (int i = 0; i < tokens.size(); ++i) {
-		cout << " [行:" << tokens[i].line << " 列:" << tokens[i].column << " 长度:" << tokens[i].length << "]    ";
-		if (tokens[i].type == Identifier)
-			cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<unsigned int>(tokens[i].value) << ")：" << SymbolTable[get<unsigned int>(tokens[i].value)].ID;
-		else if (tokens[i].type == string_)
-			cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ')';
-		else if (tokens[i].type == char_)
-			cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<char>(tokens[i].value) << ')';
-		else
-			cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')';
-		cout << endl;
-	}
+	//// 在打印tokens信息时添加位置信信息
+	//for (unsigned int i = 0; i < tokens.size(); ++i) {
+	//	cout << " [行:" << tokens[i].line << " 列:" << tokens[i].column << " 长度:" << tokens[i].length << "]    ";
+	//	if (tokens[i].type == Identifier)
+	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")："/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/;
+	//	else if (tokens[i].type == string_)
+	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ')';
+	//	else if (tokens[i].type == char_)
+	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<char>(tokens[i].value) << ')';
+	//	else
+	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')';
+	//	cout << endl;
+	//}
 	delete inputb;
 	//语法分析
 	InputBuffer* inputp = new(nothrow)InputBuffer(path);
@@ -284,6 +314,16 @@ int main(int argc, char** argv)
 	//newparser.saveToFile("rust/parser.galp");
 	newparser.SyntaxAnalysis();
 	newparser.printSyntaxTree();
+
+	int address = 100;
+	for (const auto& q : newparser.GetqList()) {
+		cout << address << ":";
+		cout << "(" << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ")" << endl;
+		address++;
+	}
+	for (const auto& err : newparser.GetSemanticErrors())
+		std::cout << "Error at line " << err.line << ", column " << err.column << ", length " << err.length << ": " << err.message << std::endl;
+
 	delete inputp;
 	return 0;
 }

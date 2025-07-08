@@ -126,7 +126,7 @@ void InputBuffer::filter_comments()
 }
 
 char InputBuffer::GetChar()
-{
+{//Ö¸ÕëÇ°½ø1£¬·µ»ØÖ¸ÕëÇ°½øÇ°Ö¸Ïò×Ö·û
 	if (!isEnd())
 		return clean_code[index++];
 	else
@@ -134,7 +134,7 @@ char InputBuffer::GetChar()
 }
 
 char InputBuffer::Retract()
-{
+{//Ö¸Õë»ØÍË1£¬·µ»Ø»ØÍËºóÖ¸ÕëÇ°Ò»¸ö×Ö·û
 	if (index == 0)
 		throw runtime_error("²»Ó¦ÔÚÖ¸ÕëÎª0Ê±µ÷ÓÃRetractº¯Êı£ºÔÚÎ´¶ÁÈ¡×Ö·û´®Ê±µ÷ÓÃRetractº¯Êı");
 	if (--index == 0)
@@ -187,32 +187,6 @@ void InputBuffer::FindOriPos(int& line, int& column) const//ÕÒµ½µ±Ç°indexÔÚÔ´³ÌĞ
 	}
 	//ÕÒµ½index¶ÔÓ¦×Ö·ûÔÚ±¾ĞĞµÄÁĞĞòºÅcolumn
 	int temp_index = line == 0 ? -1 : line_breaks[line - 1];//È¥³ı×¢ÊÍclean_codeµÄ¿ÉÒÆ¶¯Ö¸Õë
-	//int temp_ori_index = ori_index;//Ô­Ê¼sourceµÄ¿ÉÒÆ¶¯Ö¸Õë
-	//++temp_index;//²éÕÒµÚÒ»ĞĞÊ±Ë÷ÒıÎª-1£¬Ìø¹ı-1
-	//++temp_ori_index;
-	//if (temp_ori_index < int(source.size()) && source[temp_ori_index] == '\n' && temp_index < int(clean_code.size()) && source[temp_index] == '\n') {//´¦Àí\r\n
-	//	++temp_ori_index;
-	//	++temp_index;
-	//}
-	//bool find = false;//¿ªÊ¼²éÕÒ
-	//while (temp_index <= int(index - 1) && temp_ori_index < int(source.size()) && source[temp_ori_index] != '\r' && source[temp_ori_index] != '\n')
-	//	if (source[temp_ori_index] == clean_code[temp_index]) {
-	//		if (temp_index == index - 1) {
-	//			find = true;
-	//			break;
-	//		}
-	//		++temp_ori_index;
-	//		++temp_index;
-	//	}
-	//	else
-	//		++temp_ori_index;
-
-	//if (find) {
-	//	++line;
-	//	column = temp_ori_index - ori_index;
-	//}
-	//else
-	//	line = column = -1;
 	++line;
 	column = index - 1 - temp_index;
 }
@@ -309,17 +283,6 @@ void Scanner::Retract()
 void Scanner::Clear()
 {
 	strToken.clear();
-}
-
-size_t Scanner::InsertId(/*string token*/)//×Ö·û´®Îª¿ÕÒ²´æÁË½øÈ¥£¬Î´¼ìÑéÊÇ·ñÎª¿Õ
-{
-	size_t IdNum = 0;
-	for (; IdNum < SymbolTable.size(); IdNum++) {
-		if (SymbolTable[IdNum].ID == strToken)
-			return IdNum;
-	}
-	SymbolTable.push_back({ IdNum, strToken, NULL, undefined });//addr¡¢typeÔÚÓï·¨·ÖÎöÄ£¿éÌí¼Ó
-	return IdNum;
 }
 
 Token Scanner::scan()
@@ -472,8 +435,8 @@ Token Scanner::scan()
 		Retract();
 		code = Reserve();
 		if (code == None) {
-			value = InsertId();
-			return Token(Identifier, line, column, strToken.length(), value);
+			//value = InsertId();
+			return Token(Identifier, line, column, strToken.length(), strToken);
 		}
 		else
 			return Token(code, line, column, strToken.length());
@@ -657,9 +620,4 @@ void Scanner::LexicalAnalysis()
 const std::vector<Token>& Scanner::GetTokens() const
 {
 	return tokens;
-}
-
-const std::vector<SymbolTableEntry>& Scanner::GetSymbolTable() const
-{
-	return SymbolTable;
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "LexicalAnalyzer.h"
+#include "SemanticAnalyzer.h"
 #include <unordered_map>
 #include <set>
 
@@ -68,6 +68,7 @@ class Parser
 	//static const enum TokenType EPSILON = static_cast<enum TokenType>(999);
 	Scanner& lexer;
 	Token look;																		//当前的词法单元
+	SemanticAnalyzer semanticer;
 	std::vector<Production> productions;											//所有产生式
 	std::unordered_map<std::string, unsigned int> nonTerminals;						//产生式中出现的所有非终结符<名称,序号>
 	std::vector<std::set<enum TokenType>>firsts;									//所有非终结符的FIRST集合，下标为在nonTerminals中的序号
@@ -104,4 +105,7 @@ public:
 	void printSyntaxTree() const;													//打印语法树
 	void saveToFile(const std::string& filepath) const;
 	Parser(Scanner& lexer, const std::string& filepath, bool fromFile);
+	//语义分析
+	const std::vector<Quadruple>& GetqList() const;									//返回语义分析结果，{所有四元式}qList
+	const std::vector<ParseError>& GetSemanticErrors() const;						//返回{语义分析错误}semanticErrors
 };
