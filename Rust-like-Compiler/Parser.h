@@ -3,51 +3,51 @@
 #include <unordered_map>
 #include <set>
 
-//²úÉúÊ½ÖĞµÄ·ûºÅ
+//äº§ç”Ÿå¼ä¸­çš„ç¬¦å·
 struct Symbol
 {
 	bool isTerminal;
 	union {
-		enum TokenType terminalId;//¦Å´æ´¢ÎªEPSILON
+		enum TokenType terminalId;//Îµå­˜å‚¨ä¸ºEPSILON
 		unsigned int nonterminalId;
 	};
 	std::string name;
-	Symbol(const enum TokenType tokenType);//·ûºÅÎªÖÕ½á·û
-	Symbol(const unsigned int nonterminalId, const std::string symbolName);//·ûºÅÎª·ÇÖÕ½á·û
+	Symbol(const enum TokenType tokenType);//ç¬¦å·ä¸ºç»ˆç»“ç¬¦
+	Symbol(const unsigned int nonterminalId, const std::string symbolName);//ç¬¦å·ä¸ºéç»ˆç»“ç¬¦
 	bool operator==(const Symbol& other) const;
 	bool operator!=(const Symbol& other) const;
 };
 
-//²úÉúÊ½
+//äº§ç”Ÿå¼
 struct Production
 {
 	Symbol left;
-	std::vector<Symbol> right;//²»»á³öÏÖ¦Å£¬Îª¦ÅÔòÈİÆ÷Îª¿Õ
+	std::vector<Symbol> right;//ä¸ä¼šå‡ºç°Îµï¼Œä¸ºÎµåˆ™å®¹å™¨ä¸ºç©º
 	Production(const Symbol& left, const std::vector<Symbol>& right);
 };
 
-//LR1ÏîÄ¿
+//LR1é¡¹ç›®
 struct LR1Item
 {
 	int productionIndex;
 	int dotPosition;
-	enum TokenType lookahead;//¦Å´æ´¢ÎªEPSILON
+	enum TokenType lookahead;//Îµå­˜å‚¨ä¸ºEPSILON
 
 	LR1Item(int productionIndex, int dotPosition, enum TokenType lookahead);
 	bool operator<(const LR1Item& other) const;
 	bool operator==(const LR1Item& other) const;
 };
 
-//LR1ÏîÄ¿¼¯
+//LR1é¡¹ç›®é›†
 struct LR1ItemSet
 {
 	std::set<LR1Item> items;
 	bool operator==(const LR1ItemSet& other) const;
 };
 
-//LR1Action±íµÄ¶¯×÷
+//LR1Actionè¡¨çš„åŠ¨ä½œ
 enum Action { shift, reduce, accept, error };
-//LR1·ÖÎö±íµÄ±íÏî
+//LR1åˆ†æè¡¨çš„è¡¨é¡¹
 struct ActionTableEntry
 {
 	enum Action act = Action::error;
@@ -55,7 +55,7 @@ struct ActionTableEntry
 	bool operator==(const ActionTableEntry& other) const;
 };
 
-//Óï·¨·ÖÎö´íÎóÌáÊ¾
+//è¯­æ³•åˆ†æé”™è¯¯æç¤º
 struct ParseError {
 	int line;
 	int column;
@@ -67,45 +67,45 @@ class Parser
 {
 	//static const enum TokenType EPSILON = static_cast<enum TokenType>(999);
 	Scanner& lexer;
-	Token look;																		//µ±Ç°µÄ´Ê·¨µ¥Ôª
+	Token look;																		//å½“å‰çš„è¯æ³•å•å…ƒ
 	SemanticAnalyzer semanticer;
-	std::vector<Production> productions;											//ËùÓĞ²úÉúÊ½
-	std::unordered_map<std::string, unsigned int> nonTerminals;						//²úÉúÊ½ÖĞ³öÏÖµÄËùÓĞ·ÇÖÕ½á·û<Ãû³Æ,ĞòºÅ>
-	std::vector<std::set<enum TokenType>>firsts;									//ËùÓĞ·ÇÖÕ½á·ûµÄFIRST¼¯ºÏ£¬ÏÂ±êÎªÔÚnonTerminalsÖĞµÄĞòºÅ
-	std::vector<LR1ItemSet> Itemsets;												//ËùÓĞLR1ÏîÄ¿¼¯
-	std::vector<std::vector<ActionTableEntry>> actionTable;							//ºá×ø±êItemsetsÏÂ±ê£¬×İ×ø±êTokenTypeÖµ
-	std::vector<std::vector<int>> gotoTable;										//ºá×ø±êItemsetsÏÂ±ê£¬×İ×ø±ênonTerminalsÏÂ±ê
-	std::vector<Production> reduceProductionLists;									//¹æÔ¼¹ı³ÌµÄ²úÉúÊ½
-	std::vector<ParseError> parseErrors;											//¹éÔ¼¹ı³ÌÖĞÓöµ½µÄ´íÎó
-	void GetToken();																//µ÷ÓÃ´Ê·¨·ÖÎöÆ÷¶ÁÈ¡ÏÂÒ»¸ötoken²¢´æ´¢µ½look
-	void LoadGrammar(const std::string filepath);									//¶ÁÈëÎÄ¼şÖĞËùÓĞ²úÉúÊ½ÖÁproductions
-	void augmentProduction();														//ÍØ¹ãÎÄ·¨£¬½«productionsµÄµÚÒ»¸ö²úÉúÊ½×ó²¿×÷ÎªÍØ¹ãÎÄ·¨ÓÒ²¿
-	const Symbol GetNonTerminal(const std::string name);							//¸ù¾İ·ÇÖÕ½á·ûÃû³ÆÉú³É·ÇÖÕ½á·ûsymbol£¨Ã»ÓĞÔòÌí¼ÓÖÁnonTerminals£©²¢·µ»Ø
-	const enum TokenType GetTerminalType(const std::string name);					//¸ù¾İÖÕ½á·ûÃû³ÆÉú³ÉÖÕ½á·ûTokenType£¨Ã»ÓĞÔò·µ»ØTokenType::None£©²¢·µ»Ø
-	void ComputeFirsts();															//¼ÆËã{ËùÓĞ·ÇÖÕ½á·ûµÄFIRST¼¯ºÏ}firsts
-	const std::set<enum TokenType> First(const std::vector<Symbol>& symbols);		//¸ù¾İ¾äĞÍ£¨symbols£©·µ»ØFIRST(symbols)
-	const LR1ItemSet Closure(LR1ItemSet itemset);									//¸ù¾İLR1ÏîÄ¿¼¯£¨itemset£©·µ»ØCLOSURE(symbols)
-	const LR1ItemSet Goto(const LR1ItemSet& itemset, const Symbol& sym);			//¸ù¾İLR1ÏîÄ¿¼¯ºÍ·ûºÅ·µ»ØGOTO(itemset,sym)
-	void addReduceEntry(int ItemsetsIndex);											//ÎªLR1ÏîÄ¿ÔÚactionTableÌí¼Óreduce±íÏî
-	void writeActionTable(int itemset, int terminal, const ActionTableEntry& entry);//Ğ´actionTable£¬´¦Àí³åÍ»£¬Ö÷ÒªÄÚÈİÎª³åÍ»Ê±Êä³öÌáÊ¾
-	void Items();																	//¸ù¾İÎÄ·¨productionsÉú³ÉËùÓĞLR1ÏîÄ¿¼¯
-	void AddParseError(int line, int column, int length, const std::string& message);//½«¹éÔ¼¹ı³ÌÖĞÓöµ½µÄ´íÎó´æÈëparseErrors
+	std::vector<Production> productions;											//æ‰€æœ‰äº§ç”Ÿå¼
+	std::unordered_map<std::string, unsigned int> nonTerminals;						//äº§ç”Ÿå¼ä¸­å‡ºç°çš„æ‰€æœ‰éç»ˆç»“ç¬¦<åç§°,åºå·>
+	std::vector<std::set<enum TokenType>>firsts;									//æ‰€æœ‰éç»ˆç»“ç¬¦çš„FIRSTé›†åˆï¼Œä¸‹æ ‡ä¸ºåœ¨nonTerminalsä¸­çš„åºå·
+	std::vector<LR1ItemSet> Itemsets;												//æ‰€æœ‰LR1é¡¹ç›®é›†
+	std::vector<std::vector<ActionTableEntry>> actionTable;							//æ¨ªåæ ‡Itemsetsä¸‹æ ‡ï¼Œçºµåæ ‡TokenTypeå€¼
+	std::vector<std::vector<int>> gotoTable;										//æ¨ªåæ ‡Itemsetsä¸‹æ ‡ï¼Œçºµåæ ‡nonTerminalsä¸‹æ ‡
+	std::vector<Production> reduceProductionLists;									//è§„çº¦è¿‡ç¨‹çš„äº§ç”Ÿå¼
+	std::vector<ParseError> parseErrors;											//å½’çº¦è¿‡ç¨‹ä¸­é‡åˆ°çš„é”™è¯¯
+	void GetToken();																//è°ƒç”¨è¯æ³•åˆ†æå™¨è¯»å–ä¸‹ä¸€ä¸ªtokenå¹¶å­˜å‚¨åˆ°look
+	void LoadGrammar(const std::string filepath);									//è¯»å…¥æ–‡ä»¶ä¸­æ‰€æœ‰äº§ç”Ÿå¼è‡³productions
+	void augmentProduction();														//æ‹“å¹¿æ–‡æ³•ï¼Œå°†productionsçš„ç¬¬ä¸€ä¸ªäº§ç”Ÿå¼å·¦éƒ¨ä½œä¸ºæ‹“å¹¿æ–‡æ³•å³éƒ¨
+	const Symbol GetNonTerminal(const std::string name);							//æ ¹æ®éç»ˆç»“ç¬¦åç§°ç”Ÿæˆéç»ˆç»“ç¬¦symbolï¼ˆæ²¡æœ‰åˆ™æ·»åŠ è‡³nonTerminalsï¼‰å¹¶è¿”å›
+	const enum TokenType GetTerminalType(const std::string name);					//æ ¹æ®ç»ˆç»“ç¬¦åç§°ç”Ÿæˆç»ˆç»“ç¬¦TokenTypeï¼ˆæ²¡æœ‰åˆ™è¿”å›TokenType::Noneï¼‰å¹¶è¿”å›
+	void ComputeFirsts();															//è®¡ç®—{æ‰€æœ‰éç»ˆç»“ç¬¦çš„FIRSTé›†åˆ}firsts
+	const std::set<enum TokenType> First(const std::vector<Symbol>& symbols);		//æ ¹æ®å¥å‹ï¼ˆsymbolsï¼‰è¿”å›FIRST(symbols)
+	const LR1ItemSet Closure(LR1ItemSet itemset);									//æ ¹æ®LR1é¡¹ç›®é›†ï¼ˆitemsetï¼‰è¿”å›CLOSURE(symbols)
+	const LR1ItemSet Goto(const LR1ItemSet& itemset, const Symbol& sym);			//æ ¹æ®LR1é¡¹ç›®é›†å’Œç¬¦å·è¿”å›GOTO(itemset,sym)
+	void addReduceEntry(int ItemsetsIndex);											//ä¸ºLR1é¡¹ç›®åœ¨actionTableæ·»åŠ reduceè¡¨é¡¹
+	void writeActionTable(int itemset, int terminal, const ActionTableEntry& entry);//å†™actionTableï¼Œå¤„ç†å†²çªï¼Œä¸»è¦å†…å®¹ä¸ºå†²çªæ—¶è¾“å‡ºæç¤º
+	void Items();																	//æ ¹æ®æ–‡æ³•productionsç”Ÿæˆæ‰€æœ‰LR1é¡¹ç›®é›†
+	void AddParseError(int line, int column, int length, const std::string& message);//å°†å½’çº¦è¿‡ç¨‹ä¸­é‡åˆ°çš„é”™è¯¯å­˜å…¥parseErrors
 public:
 	Parser(Scanner& lexer, const std::string filepath);
-	void SyntaxAnalysis();															//Óï·¨·ÖÎö£¬°´ÕÕ¹éÔ¼Ë³Ğò½«Ê¹ÓÃµÄ²úÉúÊ½´æ´¢ÔÚreduceProductionLists
-	const std::vector<Production>& GetProductions() const;							//·µ»Ø{ËùÓĞ²úÉúÊ½}productions
-	const std::unordered_map<std::string, unsigned int>& GetNonTerminals() const;	//·µ»Ø{ËùÓĞ·ÇÖÕ½á·ûµÄÃû£ºĞòºÅÓ³Éä±í}nonTerminals
-	const std::vector<std::set<enum TokenType>>& GetFirsts() const;					//·µ»Ø{ËùÓĞ·ÇÖÕ½á·ûµÄFIRST¼¯ºÏ}firsts
-	const std::vector<LR1ItemSet>& GetItemsets() const;								//·µ»Ø{ËùÓĞLR1ÏîÄ¿¼¯}Itemsets
-	const std::vector<std::vector<ActionTableEntry>>& GetActionTable() const;		//·µ»Ø{Action±í}actionTable
-	const std::vector<std::vector<int>>& GetGotoTable() const;						//·µ»Ø{Goto±í}gotoTable
-	void printParsingTables() const;												//´òÓ¡Õ¹Ê¾LR1·ÖÎö±í£º{Action±í}actionTableºÍ{Goto±í}gotoTable
-	const std::vector<Production>& getReduceProductionLists() const;				//·µ»Ø{¹æÔ¼¹ı³ÌµÄ²úÉúÊ½}reduceProductionLists
-	const std::vector<ParseError>& GetParseErrors() const;							//·µ»Ø{¹éÔ¼¹ı³ÌµÄ´íÎó}parseErrors
-	void printSyntaxTree() const;													//´òÓ¡Óï·¨Ê÷
+	void SyntaxAnalysis();															//è¯­æ³•åˆ†æï¼ŒæŒ‰ç…§å½’çº¦é¡ºåºå°†ä½¿ç”¨çš„äº§ç”Ÿå¼å­˜å‚¨åœ¨reduceProductionLists
+	const std::vector<Production>& GetProductions() const;							//è¿”å›{æ‰€æœ‰äº§ç”Ÿå¼}productions
+	const std::unordered_map<std::string, unsigned int>& GetNonTerminals() const;	//è¿”å›{æ‰€æœ‰éç»ˆç»“ç¬¦çš„åï¼šåºå·æ˜ å°„è¡¨}nonTerminals
+	const std::vector<std::set<enum TokenType>>& GetFirsts() const;					//è¿”å›{æ‰€æœ‰éç»ˆç»“ç¬¦çš„FIRSTé›†åˆ}firsts
+	const std::vector<LR1ItemSet>& GetItemsets() const;								//è¿”å›{æ‰€æœ‰LR1é¡¹ç›®é›†}Itemsets
+	const std::vector<std::vector<ActionTableEntry>>& GetActionTable() const;		//è¿”å›{Actionè¡¨}actionTable
+	const std::vector<std::vector<int>>& GetGotoTable() const;						//è¿”å›{Gotoè¡¨}gotoTable
+	void printParsingTables() const;												//æ‰“å°å±•ç¤ºLR1åˆ†æè¡¨ï¼š{Actionè¡¨}actionTableå’Œ{Gotoè¡¨}gotoTable
+	const std::vector<Production>& getReduceProductionLists() const;				//è¿”å›{è§„çº¦è¿‡ç¨‹çš„äº§ç”Ÿå¼}reduceProductionLists
+	const std::vector<ParseError>& GetParseErrors() const;							//è¿”å›{å½’çº¦è¿‡ç¨‹çš„é”™è¯¯}parseErrors
+	void printSyntaxTree() const;													//æ‰“å°è¯­æ³•æ ‘
 	void saveToFile(const std::string& filepath) const;
 	Parser(Scanner& lexer, const std::string& filepath, bool fromFile);
-	//ÓïÒå·ÖÎö
-	const std::vector<Quadruple>& GetqList() const;									//·µ»ØÓïÒå·ÖÎö½á¹û£¬{ËùÓĞËÄÔªÊ½}qList
-	const std::vector<ParseError>& GetSemanticErrors() const;						//·µ»Ø{ÓïÒå·ÖÎö´íÎó}semanticErrors
+	//è¯­ä¹‰åˆ†æ
+	const std::vector<Quadruple>& GetqList() const;									//è¿”å›è¯­ä¹‰åˆ†æç»“æœï¼Œ{æ‰€æœ‰å››å…ƒå¼}qList
+	const std::vector<ParseError>& GetSemanticErrors() const;						//è¿”å›{è¯­ä¹‰åˆ†æé”™è¯¯}semanticErrors
 };

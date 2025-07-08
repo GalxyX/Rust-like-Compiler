@@ -3,7 +3,7 @@
 #include <variant>
 #include <vector>
 #include <filesystem>
-// ¶¨Òå´ËºêÒÔÆôÓÃµ÷ÊÔÊä³ö£¬×¢ÊÍµô´ËĞĞÒÔ½ûÓÃµ÷ÊÔÊä³ö
+// å®šä¹‰æ­¤å®ä»¥å¯ç”¨è°ƒè¯•è¾“å‡ºï¼Œæ³¨é‡Šæ‰æ­¤è¡Œä»¥ç¦ç”¨è°ƒè¯•è¾“å‡º
 //#define ENABLE_NOTING_OUTPUT
 
 #ifdef ENABLE_NOTING_OUTPUT
@@ -15,11 +15,11 @@
 class InputBuffer
 {
 private:
-	// const static int RUST_MAX_IDENTIFIER_LENGTH// Î´ÕÒµ½rust×î´ó±êÊ¶·û³¤¶ÈÏŞÖÆĞÅÏ¢
-	std::string source;				//ÍêÕûÔ´´úÂë
-	std::string clean_code;			//É¾³ı×¢ÊÍºó´úÂë
-	std::vector<size_t>line_breaks;	//É¾³ı×¢ÊÍºó´úÂëÖĞ»»ĞĞÏÂ±ê
-	unsigned int index;				//É¨ÃèÆ÷µ±Ç°Ö¸Õë£¬Ö¸ÏòÏÂÒ»¸ö½«Òª¶ÁÈ¡Î»ÖÃ
+	// const static int RUST_MAX_IDENTIFIER_LENGTH// æœªæ‰¾åˆ°rustæœ€å¤§æ ‡è¯†ç¬¦é•¿åº¦é™åˆ¶ä¿¡æ¯
+	std::string source;				//å®Œæ•´æºä»£ç 
+	std::string clean_code;			//åˆ é™¤æ³¨é‡Šåä»£ç 
+	std::vector<size_t>line_breaks;	//åˆ é™¤æ³¨é‡Šåä»£ç ä¸­æ¢è¡Œä¸‹æ ‡
+	unsigned int index;				//æ‰«æå™¨å½“å‰æŒ‡é’ˆï¼ŒæŒ‡å‘ä¸‹ä¸€ä¸ªå°†è¦è¯»å–ä½ç½®
 public:
 	InputBuffer(const std::filesystem::path& path);
 	InputBuffer(const std::string& src);
@@ -31,98 +31,98 @@ public:
 };
 
 /********************************************************************************
-!	ident!(...), ident!{...}, ident![...]	ºêÕ¹¿ª
-!	!expr	°´Î»·Ç»òÂß¼­·Ç	Not
-!=	var != expr	²»µÈ±È½Ï	PartialEq
-%	expr % expr	ËãÊõÈ¡Ä£	Rem
-%=	var %= expr	ËãÊõÈ¡Ä£Óë¸³Öµ	RemAssign
-&	&expr, &mut expr	½èÓÃ
-&	&type, &mut type, &'a type, &'a mut type	½èÓÃÖ¸ÕëÀàĞÍ
-&	expr & expr	°´Î»Óë	BitAnd
-&=	var &= expr	°´Î»Óë¼°¸³Öµ	BitAndAssign
-&&	expr && expr	Âß¼­Óë
-*	expr * expr	ËãÊõ³Ë·¨	Mul
-*=	var *= expr	ËãÊõ³Ë·¨Óë¸³Öµ	MulAssign
-*	*expr	½âÒıÓÃ
-*	*const type, *mut type	ÂãÖ¸Õë
-+	trait + trait, 'a + trait	¸´ºÏÀàĞÍÏŞÖÆ
-+	expr + expr	ËãÊõ¼Ó·¨	Add
-+=	var += expr	ËãÊõ¼Ó·¨Óë¸³Öµ	AddAssign
-,	expr, expr	²ÎÊıÒÔ¼°ÔªËØ·Ö¸ô·û
--	- expr	ËãÊõÈ¡¸º	Neg
--	expr - expr	ËãÊõ¼õ·¨	Sub
--=	var -= expr	ËãÊõ¼õ·¨Óë¸³Öµ	SubAssign
-->	fn(...) -> type, |...| -> type	º¯ÊıÓë±Õ°ü£¬·µ»ØÀàĞÍ
-.	expr.ident	³ÉÔ±·ÃÎÊ
-..	.., expr.., ..expr, expr..expr	ÓÒÅÅ³ı·¶Î§
-..	..expr	½á¹¹Ìå¸üĞÂÓï·¨
-..	variant(x, ..), struct_type { x, .. }	¡°ÓëÊ£Óà²¿·Ö¡±µÄÄ£Ê½°ó¶¨
-...	expr...expr	Ä£Ê½: ·¶Î§°üº¬Ä£Ê½
-/	expr / expr	ËãÊõ³ı·¨	Div
-/=	var /= expr	ËãÊõ³ı·¨Óë¸³Öµ	DivAssign
-:	pat: type, ident: type	Ô¼Êø
-:	ident: expr	½á¹¹Ìå×Ö¶Î³õÊ¼»¯
-:	'a: loop {...}	Ñ­»·±êÖ¾
-;	expr;	Óï¾äºÍÓï¾ä½áÊø·û
-;	[...; len]	¹Ì¶¨´óĞ¡Êı×éÓï·¨µÄ²¿·Ö
-<<	expr << expr	×óÒÆ	Shl
-<<=	var <<= expr	×óÒÆÓë¸³Öµ	ShlAssign
-<	expr < expr	Ğ¡ÓÚ±È½Ï	PartialOrd
-<=	expr <= expr	Ğ¡ÓÚµÈÓÚ±È½Ï	PartialOrd
-=	var = expr, ident = type	¸³Öµ/µÈÖµ
-==	expr == expr	µÈÓÚ±È½Ï	PartialEq
-=>	pat => expr	Æ¥Åä×¼±¸Óï·¨µÄ²¿·Ö
->	expr > expr	´óÓÚ±È½Ï	PartialOrd
->=	expr >= expr	´óÓÚµÈÓÚ±È½Ï	PartialOrd
->>	expr >> expr	ÓÒÒÆ	Shr
->>=	var >>= expr	ÓÒÒÆÓë¸³Öµ	ShrAssign
-@	ident @ pat	Ä£Ê½°ó¶¨
-^	expr ^ expr	°´Î»Òì»ò	BitXor
-^=	var ^= expr	°´Î»Òì»òÓë¸³Öµ	BitXorAssign
-|	pat | pat	Ä£Ê½Ñ¡Ôñ
-|	expr | expr	°´Î»»ò	BitOr
-|=	var |= expr	°´Î»»òÓë¸³Öµ	BitOrAssign
-||	expr || expr	Âß¼­»ò
-?	expr?	´íÎó´«²¥
+!	ident!(...), ident!{...}, ident![...]	å®å±•å¼€
+!	!expr	æŒ‰ä½éæˆ–é€»è¾‘é	Not
+!=	var != expr	ä¸ç­‰æ¯”è¾ƒ	PartialEq
+%	expr % expr	ç®—æœ¯å–æ¨¡	Rem
+%=	var %= expr	ç®—æœ¯å–æ¨¡ä¸èµ‹å€¼	RemAssign
+&	&expr, &mut expr	å€Ÿç”¨
+&	&type, &mut type, &'a type, &'a mut type	å€Ÿç”¨æŒ‡é’ˆç±»å‹
+&	expr & expr	æŒ‰ä½ä¸	BitAnd
+&=	var &= expr	æŒ‰ä½ä¸åŠèµ‹å€¼	BitAndAssign
+&&	expr && expr	é€»è¾‘ä¸
+*	expr * expr	ç®—æœ¯ä¹˜æ³•	Mul
+*=	var *= expr	ç®—æœ¯ä¹˜æ³•ä¸èµ‹å€¼	MulAssign
+*	*expr	è§£å¼•ç”¨
+*	*const type, *mut type	è£¸æŒ‡é’ˆ
++	trait + trait, 'a + trait	å¤åˆç±»å‹é™åˆ¶
++	expr + expr	ç®—æœ¯åŠ æ³•	Add
++=	var += expr	ç®—æœ¯åŠ æ³•ä¸èµ‹å€¼	AddAssign
+,	expr, expr	å‚æ•°ä»¥åŠå…ƒç´ åˆ†éš”ç¬¦
+-	- expr	ç®—æœ¯å–è´Ÿ	Neg
+-	expr - expr	ç®—æœ¯å‡æ³•	Sub
+-=	var -= expr	ç®—æœ¯å‡æ³•ä¸èµ‹å€¼	SubAssign
+->	fn(...) -> type, |...| -> type	å‡½æ•°ä¸é—­åŒ…ï¼Œè¿”å›ç±»å‹
+.	expr.ident	æˆå‘˜è®¿é—®
+..	.., expr.., ..expr, expr..expr	å³æ’é™¤èŒƒå›´
+..	..expr	ç»“æ„ä½“æ›´æ–°è¯­æ³•
+..	variant(x, ..), struct_type { x, .. }	â€œä¸å‰©ä½™éƒ¨åˆ†â€çš„æ¨¡å¼ç»‘å®š
+...	expr...expr	æ¨¡å¼: èŒƒå›´åŒ…å«æ¨¡å¼
+/	expr / expr	ç®—æœ¯é™¤æ³•	Div
+/=	var /= expr	ç®—æœ¯é™¤æ³•ä¸èµ‹å€¼	DivAssign
+:	pat: type, ident: type	çº¦æŸ
+:	ident: expr	ç»“æ„ä½“å­—æ®µåˆå§‹åŒ–
+:	'a: loop {...}	å¾ªç¯æ ‡å¿—
+;	expr;	è¯­å¥å’Œè¯­å¥ç»“æŸç¬¦
+;	[...; len]	å›ºå®šå¤§å°æ•°ç»„è¯­æ³•çš„éƒ¨åˆ†
+<<	expr << expr	å·¦ç§»	Shl
+<<=	var <<= expr	å·¦ç§»ä¸èµ‹å€¼	ShlAssign
+<	expr < expr	å°äºæ¯”è¾ƒ	PartialOrd
+<=	expr <= expr	å°äºç­‰äºæ¯”è¾ƒ	PartialOrd
+=	var = expr, ident = type	èµ‹å€¼/ç­‰å€¼
+==	expr == expr	ç­‰äºæ¯”è¾ƒ	PartialEq
+=>	pat => expr	åŒ¹é…å‡†å¤‡è¯­æ³•çš„éƒ¨åˆ†
+>	expr > expr	å¤§äºæ¯”è¾ƒ	PartialOrd
+>=	expr >= expr	å¤§äºç­‰äºæ¯”è¾ƒ	PartialOrd
+>>	expr >> expr	å³ç§»	Shr
+>>=	var >>= expr	å³ç§»ä¸èµ‹å€¼	ShrAssign
+@	ident @ pat	æ¨¡å¼ç»‘å®š
+^	expr ^ expr	æŒ‰ä½å¼‚æˆ–	BitXor
+^=	var ^= expr	æŒ‰ä½å¼‚æˆ–ä¸èµ‹å€¼	BitXorAssign
+|	pat | pat	æ¨¡å¼é€‰æ‹©
+|	expr | expr	æŒ‰ä½æˆ–	BitOr
+|=	var |= expr	æŒ‰ä½æˆ–ä¸èµ‹å€¼	BitOrAssign
+||	expr || expr	é€»è¾‘æˆ–
+?	expr?	é”™è¯¯ä¼ æ’­
 ********************************************************************************/
 //enum TokenType {
-//	None,//¾ù²»Æ¥Åä·µ»ØÖµ
-//	I8, U8, I16, U16, I32, U32, I64, U64, I128, U128, ISIZE, USIZE, F32, F64, BOOL, CHAR, UNIT, ARRAY, LET, IF, ELSE, WHILE, RETURN, MUT, FN, FOR, IN, LOOP, BREAK, CONTINUE,//¹Ø¼ü×ÖreservedWord
-//	Identifier,//±êÊ¶·ûIdentifier
-//	/*i8, u8, i16, u16, */i32, /*u32, i64, u64, i128, u128, isize, usize, f32, f64, bool_, char_, string_, unit_, array_,*/ //³£ÊıÀàĞÍConstant
-//	//ÔËËã·ûÓë½ç·ûOperator, Delimiter
-//	Assignment,//¸³ÖµºÅ£º =
-//	Addition, Subtraction, Multiplication, Division, Equality, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Inequality,//Ëã·û£º + | -| *| / | == | > | >= | < | <= | !=
-//	ParenthesisL, ParenthesisR, CurlyBraceL, CurlyBraceR, SquareBracketL, SquareBracketR,//½ç·û£º( | ) | { | } | [ | ]
-//	Semicolon, Colon, Comma,//·Ö¸ô·û£º; | : | ,
-//	ArrowOperator, DotOperator, RangeOperator,//ÌØÊâ·ûºÅ£º -> | . | ..
-//	DoubleQuote, SingleQuote,//²¹³ä·ûºÅ" '
-//	Not, Modulo, ModuloAssign, BitAnd, BitAndAssign, LogicalAnd, BitOr, BitOrAssign, LogicalOr, ErrorPropagation,//²¹³ä·ûºÅ! % %= & &= && | |= || ?
-//	MultiplicationAssign, AdditionAssign, SubtractionAssign, DivisionAssign, LeftShift, LeftShiftAssign, Arrowmatch, RightShift, RightShiftAssign, PatternBinding, BitXor, BitXorAssign,//²¹³ä·ûºÅ*= += -= /= << <<= => >> >>= @ ^ ^=
-//	End//½áÊø·û#£¨'\0'£©
+//	None,//å‡ä¸åŒ¹é…è¿”å›å€¼
+//	I8, U8, I16, U16, I32, U32, I64, U64, I128, U128, ISIZE, USIZE, F32, F64, BOOL, CHAR, UNIT, ARRAY, LET, IF, ELSE, WHILE, RETURN, MUT, FN, FOR, IN, LOOP, BREAK, CONTINUE,//å…³é”®å­—reservedWord
+//	Identifier,//æ ‡è¯†ç¬¦Identifier
+//	/*i8, u8, i16, u16, */i32, /*u32, i64, u64, i128, u128, isize, usize, f32, f64, bool_, char_, string_, unit_, array_,*/ //å¸¸æ•°ç±»å‹Constant
+//	//è¿ç®—ç¬¦ä¸ç•Œç¬¦Operator, Delimiter
+//	Assignment,//èµ‹å€¼å·ï¼š =
+//	Addition, Subtraction, Multiplication, Division, Equality, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Inequality,//ç®—ç¬¦ï¼š + | -| *| / | == | > | >= | < | <= | !=
+//	ParenthesisL, ParenthesisR, CurlyBraceL, CurlyBraceR, SquareBracketL, SquareBracketR,//ç•Œç¬¦ï¼š( | ) | { | } | [ | ]
+//	Semicolon, Colon, Comma,//åˆ†éš”ç¬¦ï¼š; | : | ,
+//	ArrowOperator, DotOperator, RangeOperator,//ç‰¹æ®Šç¬¦å·ï¼š -> | . | ..
+//	DoubleQuote, SingleQuote,//è¡¥å……ç¬¦å·" '
+//	Not, Modulo, ModuloAssign, BitAnd, BitAndAssign, LogicalAnd, BitOr, BitOrAssign, LogicalOr, ErrorPropagation,//è¡¥å……ç¬¦å·! % %= & &= && | |= || ?
+//	MultiplicationAssign, AdditionAssign, SubtractionAssign, DivisionAssign, LeftShift, LeftShiftAssign, Arrowmatch, RightShift, RightShiftAssign, PatternBinding, BitXor, BitXorAssign,//è¡¥å……ç¬¦å·*= += -= /= << <<= => >> >>= @ ^ ^=
+//	End//ç»“æŸç¬¦#ï¼ˆ'\0'ï¼‰
 //};
-// ¶¨ÒåËùÓĞÃ¶¾Ù³ÉÔ±µÄºêÁĞ±í
+// å®šä¹‰æ‰€æœ‰æšä¸¾æˆå‘˜çš„å®åˆ—è¡¨
 #define TOKEN_TYPES \
     X(None) \
-    /* ¹Ø¼ü×ÖreservedWord */ \
+    /* å…³é”®å­—reservedWord */ \
     X(I8) X(U8) X(I16) X(U16) X(I32) X(U32) X(I64) X(U64) X(I128) X(U128) X(ISIZE) X(USIZE) X(F32) X(F64) X(BOOL) X(CHAR) \
     X(UNIT) X(ARRAY) X(LET) X(IF) X(ELSE) X(WHILE) X(RETURN) X(MUT) X(FN) X(FOR) X(IN) X(LOOP) X(BREAK) X(CONTINUE) \
 	X(TRUE) X(FALSE) \
-    /* ±êÊ¶·ûIdentifier */ \
+    /* æ ‡è¯†ç¬¦Identifier */ \
     X(Identifier) \
-    /* ³£ÊıÀàĞÍConstant */ \
+    /* å¸¸æ•°ç±»å‹Constant */ \
 	/*X(i8_) X(u8_) X(i16_) X(u16_) */X(i32_) /*X(u32_) X(i64_) X(u64_) X(i128_) X(u128_) X(isize_) X(usize_) X(f32_) X(f64_) X(bool_) */X(char_) X(string_)/* X(unit_) X(array_)*/ \
-    /* ÔËËã·ûÓë½ç·ûOperator, Delimiter */ \
-    X(Assignment)																																	/* ¸³ÖµºÅ£º = */ \
-    X(Addition) X(Subtraction) X(Multiplication) X(Division) X(Equality) X(GreaterThan) X(GreaterOrEqual) X(LessThan) X(LessOrEqual) X(Inequality)	/* Ëã·û£º + | -| *| / | == | > | >= | < | <= | != */ \
-    X(ParenthesisL) X(ParenthesisR) X(CurlyBraceL) X(CurlyBraceR) X(SquareBracketL) X(SquareBracketR)												/* ½ç·û£º( | ) | { | } | [ | ] */ \
-    X(Semicolon) X(Colon) X(Comma)																													/* ·Ö¸ô·û£º; | : | , */ \
-    X(ArrowOperator) X(DotOperator) X(RangeOperator)																								/* ÌØÊâ·ûºÅ£º -> | . | .. */ \
-    /* ²¹³ä·ûºÅ */ \
-    X(DoubleQuote) X(SingleQuote)																													/* ²¹³ä·ûºÅ" ' */ \
-    X(Not) X(Modulo) X(ModuloAssign) X(BitAnd) X(BitAndAssign) X(LogicalAnd) X(BitOr) X(BitOrAssign) X(LogicalOr) X(ErrorPropagation)				/* ²¹³ä·ûºÅ! % %= & &= && | |= || ? */ \
-    X(MultiplicationAssign) X(AdditionAssign) X(SubtractionAssign) X(DivisionAssign) X(LeftShift) X(LeftShiftAssign) X(Arrowmatch) X(RightShift) X(RightShiftAssign) X(PatternBinding) X(BitXor) X(BitXorAssign) /* ²¹³ä·ûºÅ*= += -= /= << <<= => >> >>= @ ^ ^= */ \
-    X(End) X(EPSILON)																																/* ½áÊø·û#£¨'\0'£© */
+    /* è¿ç®—ç¬¦ä¸ç•Œç¬¦Operator, Delimiter */ \
+    X(Assignment)																																	/* èµ‹å€¼å·ï¼š = */ \
+    X(Addition) X(Subtraction) X(Multiplication) X(Division) X(Equality) X(GreaterThan) X(GreaterOrEqual) X(LessThan) X(LessOrEqual) X(Inequality)	/* ç®—ç¬¦ï¼š + | -| *| / | == | > | >= | < | <= | != */ \
+    X(ParenthesisL) X(ParenthesisR) X(CurlyBraceL) X(CurlyBraceR) X(SquareBracketL) X(SquareBracketR)												/* ç•Œç¬¦ï¼š( | ) | { | } | [ | ] */ \
+    X(Semicolon) X(Colon) X(Comma)																													/* åˆ†éš”ç¬¦ï¼š; | : | , */ \
+    X(ArrowOperator) X(DotOperator) X(RangeOperator)																								/* ç‰¹æ®Šç¬¦å·ï¼š -> | . | .. */ \
+    /* è¡¥å……ç¬¦å· */ \
+    X(DoubleQuote) X(SingleQuote)																													/* è¡¥å……ç¬¦å·" ' */ \
+    X(Not) X(Modulo) X(ModuloAssign) X(BitAnd) X(BitAndAssign) X(LogicalAnd) X(BitOr) X(BitOrAssign) X(LogicalOr) X(ErrorPropagation)				/* è¡¥å……ç¬¦å·! % %= & &= && | |= || ? */ \
+    X(MultiplicationAssign) X(AdditionAssign) X(SubtractionAssign) X(DivisionAssign) X(LeftShift) X(LeftShiftAssign) X(Arrowmatch) X(RightShift) X(RightShiftAssign) X(PatternBinding) X(BitXor) X(BitXorAssign) /* è¡¥å……ç¬¦å·*= += -= /= << <<= => >> >>= @ ^ ^= */ \
+    X(End) X(EPSILON)																																/* ç»“æŸç¬¦#ï¼ˆ'\0'ï¼‰ */
 
 enum TokenType {
 #define X(name) name,
@@ -133,36 +133,36 @@ using TokenValue = std::variant<std::monostate, int, unsigned int, long, unsigne
 struct Token {
 	enum TokenType type;
 	TokenValue value;
-	int line;    // ĞĞºÅ
-	int column;  // ÁĞºÅ
-	int length;  // ´Ê·¨µ¥Ôª³¤¶È
+	int line;    // è¡Œå·
+	int column;  // åˆ—å·
+	int length;  // è¯æ³•å•å…ƒé•¿åº¦
 	Token(TokenType type, int line = -1, int column = -1, int length = 0, TokenValue value = 0);
 	Token& operator=(const Token& other);
 };
 
-const char* TokenTypeToString(enum TokenType type);// Í¨¹ıÃ¶¾ÙÖµ»ñÈ¡Ãû³Æ
-const char OutOfRangeTokenType[] = "UnknownTokenType";//³¬¹ı¶¨ÒåµÄTokenType´«ÈëTokenTypeToStringÊ±·µ»ØÖµ
+const char* TokenTypeToString(enum TokenType type);// é€šè¿‡æšä¸¾å€¼è·å–åç§°
+const char OutOfRangeTokenType[] = "UnknownTokenType";//è¶…è¿‡å®šä¹‰çš„TokenTypeä¼ å…¥TokenTypeToStringæ—¶è¿”å›å€¼
 
 class Scanner
 {
 private:
-	static const std::string ReservedWordsTable[];	//ÓëTokenTypeµÚÒ»ĞĞÄÚÈİÍêÈ«Æ¥Åä£¬Ó¦Í¬²½ĞŞ¸Ä
-	InputBuffer& input;								//ÊäÈë»º³åÇø
-	char ch;										//´æ·Åµ±Ç°¶ÁÈë×Ö·û
-	std::string strToken;							//´æ·Åµ¥´ÊµÄ×Ö·û´®
-	std::vector<Token> tokens;						//ËùÓĞµ¥´Ê·ûºÅ
-	void GetChar();									//È¡×Ö·û¹ı³Ì¡£È¡ÏÂÒ»×Ö·ûµ½ch £»ËÑË÷Ö¸Õë + 1
-	void GetBC();									//ÂË³ı¿Õ×Ö·û¹ı³Ì¡£¹¦ÄÜ£ºÅĞch = ¿Õ ? ÈôÊÇ£¬Ôòµ÷ÓÃGetChar
-	void Retract();									//×Ó³ÌĞò¹ı³Ì¡£¹¦ÄÜ£ºËÑË÷Ö¸Õë»ØÍËÒ»×Ö·û
-	void Concat();									//×Ó³ÌĞò¹ı³Ì¡£¹¦ÄÜ£º°ÑchÖĞµÄ×Ö·ûÆ´ÈëstrToken
-	void Clear();									//Çå¿ÕstrToken£¬ÎªÏÂÒ»ÂÖÊ¶±ğ×ö×¼±¸
-	bool IsLetter() const;							//²¼¶ûº¯Êı¡£¹¦ÄÜ£º chÖĞÎª×ÖÄ¸Ê±·µ»Ø.T.
-	bool IsDigit() const;							//²¼¶ûº¯Êı¡£¹¦ÄÜ£º chÖĞÎªÊı×ÖÊ±·µ»Ø.T.
-	enum TokenType Reserve() const;					//ÕûĞÍº¯Êı¡£¹¦ÄÜ£º°´strTokenÖĞ×Ö·û´®²é±£Áô×Ö±í£»²éµ½·µ»Ø±£Áô×Ö±àÂë; ·ñÔò·µ»Ø0
+	static const std::string ReservedWordsTable[];	//ä¸TokenTypeç¬¬ä¸€è¡Œå†…å®¹å®Œå…¨åŒ¹é…ï¼Œåº”åŒæ­¥ä¿®æ”¹
+	InputBuffer& input;								//è¾“å…¥ç¼“å†²åŒº
+	char ch;										//å­˜æ”¾å½“å‰è¯»å…¥å­—ç¬¦
+	std::string strToken;							//å­˜æ”¾å•è¯çš„å­—ç¬¦ä¸²
+	std::vector<Token> tokens;						//æ‰€æœ‰å•è¯ç¬¦å·
+	void GetChar();									//å–å­—ç¬¦è¿‡ç¨‹ã€‚å–ä¸‹ä¸€å­—ç¬¦åˆ°ch ï¼›æœç´¢æŒ‡é’ˆ + 1
+	void GetBC();									//æ»¤é™¤ç©ºå­—ç¬¦è¿‡ç¨‹ã€‚åŠŸèƒ½ï¼šåˆ¤ch = ç©º ? è‹¥æ˜¯ï¼Œåˆ™è°ƒç”¨GetChar
+	void Retract();									//å­ç¨‹åºè¿‡ç¨‹ã€‚åŠŸèƒ½ï¼šæœç´¢æŒ‡é’ˆå›é€€ä¸€å­—ç¬¦
+	void Concat();									//å­ç¨‹åºè¿‡ç¨‹ã€‚åŠŸèƒ½ï¼šæŠŠchä¸­çš„å­—ç¬¦æ‹¼å…¥strToken
+	void Clear();									//æ¸…ç©ºstrTokenï¼Œä¸ºä¸‹ä¸€è½®è¯†åˆ«åšå‡†å¤‡
+	bool IsLetter() const;							//å¸ƒå°”å‡½æ•°ã€‚åŠŸèƒ½ï¼š chä¸­ä¸ºå­—æ¯æ—¶è¿”å›.T.
+	bool IsDigit() const;							//å¸ƒå°”å‡½æ•°ã€‚åŠŸèƒ½ï¼š chä¸­ä¸ºæ•°å­—æ—¶è¿”å›.T.
+	enum TokenType Reserve() const;					//æ•´å‹å‡½æ•°ã€‚åŠŸèƒ½ï¼šæŒ‰strTokenä¸­å­—ç¬¦ä¸²æŸ¥ä¿ç•™å­—è¡¨ï¼›æŸ¥åˆ°è¿”å›ä¿ç•™å­—ç¼–ç ; å¦åˆ™è¿”å›0
 public:
 	Scanner(InputBuffer& inputbuffer);
-	void LexicalAnalysis();							//Æô¶¯´Ê·¨·ÖÎö
-	Token scan();									//ÕÒµ½ÏÂÒ»¸öµ¥´Ê·ûºÅ
-	void ProcError(const std::string errorMessage, int line = -1, int column = -1) const;		//Óöµ½ÎŞ·¨Ê¶±ğ×Ö·û´®Ê±´íÎóÌáÊ¾
+	void LexicalAnalysis();							//å¯åŠ¨è¯æ³•åˆ†æ
+	Token scan();									//æ‰¾åˆ°ä¸‹ä¸€ä¸ªå•è¯ç¬¦å·
+	void ProcError(const std::string errorMessage, int line = -1, int column = -1) const;		//é‡åˆ°æ— æ³•è¯†åˆ«å­—ç¬¦ä¸²æ—¶é”™è¯¯æç¤º
 	const std::vector<Token>& GetTokens() const;
 };

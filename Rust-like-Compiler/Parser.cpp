@@ -11,7 +11,7 @@ Symbol::Symbol(const enum TokenType tokenType) :isTerminal(true), terminalId(tok
 {
 	string s = TokenTypeToString(tokenType);
 	if (s == OutOfRangeTokenType)
-		throw runtime_error("Î´¶¨ÒåµÄÖÕ½á·û");
+		throw runtime_error("æœªå®šä¹‰çš„ç»ˆç»“ç¬¦");
 	else
 		name = s;
 }
@@ -76,37 +76,37 @@ void Parser::GetToken()
 
 void Parser::LoadGrammar(const string filepath)
 {
-	//´ò¿ªÎÄ¼ş
+	//æ‰“å¼€æ–‡ä»¶
 	ifstream readFile(filepath, ios::in);
 	if (!readFile.is_open())
 	{
-		DEBUG_CERR << "ÎŞ·¨´ò¿ªÓï·¨²úÉúÊ½ÎÄ¼ş: " << filepath << endl;
-		throw runtime_error("ÎŞ·¨´ò¿ªÓï·¨²úÉúÊ½ÎÄ¼ş: " + filepath);
+		DEBUG_CERR << "æ— æ³•æ‰“å¼€è¯­æ³•äº§ç”Ÿå¼æ–‡ä»¶: " << filepath << endl;
+		throw runtime_error("æ— æ³•æ‰“å¼€è¯­æ³•äº§ç”Ÿå¼æ–‡ä»¶: " + filepath);
 	}
-	//ÌáÈ¡²úÉúÊ½
+	//æå–äº§ç”Ÿå¼
 	string line;
-	//¶ÁÈ¡Ã¿Ò»ĞĞ
+	//è¯»å–æ¯ä¸€è¡Œ
 	while (getline(readFile, line)) {
-		//Ìø¹ı¿ÕĞĞ
+		//è·³è¿‡ç©ºè¡Œ
 		if (line.empty())
 			continue;
-		//ÕÒµ½×óÓÒ·Ö¸ô·ûµÚÒ»¸ö->
+		//æ‰¾åˆ°å·¦å³åˆ†éš”ç¬¦ç¬¬ä¸€ä¸ª->
 		size_t arrowPos = line.find("->");
 		if (arrowPos == string::npos) {
-			DEBUG_CERR << "ºöÂÔ¸ñÊ½²»ÕıÈ·µÄĞĞ" << line << endl;
+			DEBUG_CERR << "å¿½ç•¥æ ¼å¼ä¸æ­£ç¡®çš„è¡Œ" << line << endl;
 			continue;
 		}
-		//ÌáÈ¡×ó²¿
+		//æå–å·¦éƒ¨
 		string leftstr = line.substr(0, arrowPos);
-		leftstr.erase(remove_if(leftstr.begin(), leftstr.end(), [](char ch) {return ch == ' '; }), leftstr.end());//É¾³ı×ó²¿ËùÓĞÎ»ÖÃ¿Õ¸ñ
+		leftstr.erase(remove_if(leftstr.begin(), leftstr.end(), [](char ch) {return ch == ' '; }), leftstr.end());//åˆ é™¤å·¦éƒ¨æ‰€æœ‰ä½ç½®ç©ºæ ¼
 		Symbol leftSymbol = GetNonTerminal(leftstr);
-		//ÌáÈ¡ÓÒ²¿²¢Ìí¼Ó²úÉúÊ½
+		//æå–å³éƒ¨å¹¶æ·»åŠ äº§ç”Ÿå¼
 		string rightstr = line.substr(arrowPos + 2);
-		istringstream is(rightstr);//->ÓÒ²àËùÓĞ×Ö·û
-		string singleSymbol;//->ÓÒ²àÓÃ¿Õ¸ñ·Ö¸ôµÄ<·ûºÅ>
-		vector<Symbol> rightSymbols;//Ã¿¸ö²úÉúÊ½ÓÒ²àµÄËùÓĞ<·ûºÅ>
+		istringstream is(rightstr);//->å³ä¾§æ‰€æœ‰å­—ç¬¦
+		string singleSymbol;//->å³ä¾§ç”¨ç©ºæ ¼åˆ†éš”çš„<ç¬¦å·>
+		vector<Symbol> rightSymbols;//æ¯ä¸ªäº§ç”Ÿå¼å³ä¾§çš„æ‰€æœ‰<ç¬¦å·>
 		while (is >> singleSymbol) {
-			if (singleSymbol == "|") {//µ¥Ìõ²úÉúÊ½Íê±Ï
+			if (singleSymbol == "|") {//å•æ¡äº§ç”Ÿå¼å®Œæ¯•
 				if (!rightSymbols.empty())
 					productions.push_back(Production(leftSymbol, rightSymbols));
 				rightSymbols.clear();
@@ -118,7 +118,7 @@ void Parser::LoadGrammar(const string filepath)
 				}
 				else {
 					TokenType token = GetTerminalType(singleSymbol);
-					if (token == TokenType::None)//Îª·ÇÖÕ½á·û
+					if (token == TokenType::None)//ä¸ºéç»ˆç»“ç¬¦
 						rightSymbols.push_back(GetNonTerminal(singleSymbol));
 					else
 						rightSymbols.push_back(Symbol(token));
@@ -134,7 +134,7 @@ void Parser::LoadGrammar(const string filepath)
 void Parser::augmentProduction()
 {
 	if (productions.empty())
-		throw runtime_error("ÎŞ²úÉúÊ½£¬ÎŞ·¨Éú³ÉÍØ¹ãÎÄ·¨");
+		throw runtime_error("æ— äº§ç”Ÿå¼ï¼Œæ— æ³•ç”Ÿæˆæ‹“å¹¿æ–‡æ³•");
 	vector<Production>::iterator it = productions.begin();
 	productions.insert(it, Production(GetNonTerminal(""), vector<Symbol>{ it->left }));
 }
@@ -143,7 +143,7 @@ const Symbol Parser::GetNonTerminal(const string name)
 {
 	auto it = nonTerminals.find(name);
 	if (it == nonTerminals.end()) {
-		//ÔÚmapÖĞÌí¼ÓĞÂµÄ·ÇÖÕ½á·û
+		//åœ¨mapä¸­æ·»åŠ æ–°çš„éç»ˆç»“ç¬¦
 		unsigned int nonterminalId = nonTerminals.size();
 		nonTerminals[name] = nonterminalId;
 		return Symbol(nonterminalId, name);
@@ -154,9 +154,9 @@ const Symbol Parser::GetNonTerminal(const string name)
 
 const enum TokenType Parser::GetTerminalType(const string name)
 {
-	//Ô¤¶¨ÒåÖÕ½á·ûÓ³Éä¹ØÏµ
+	//é¢„å®šä¹‰ç»ˆç»“ç¬¦æ˜ å°„å…³ç³»
 	static const unordered_map<string, TokenType> terminalMap = {
-		//ÔËËã·ûÓ³Éä
+		//è¿ç®—ç¬¦æ˜ å°„
 		{"+", TokenType::Addition},
 		{"-", TokenType::Subtraction},
 		{"*", TokenType::Multiplication},
@@ -204,7 +204,7 @@ const enum TokenType Parser::GetTerminalType(const string name)
 		{"^=", TokenType::BitXorAssign},
 		{"\"", TokenType::DoubleQuote},
 		{"'", TokenType::SingleQuote},
-		//¹Ø¼ü×ÖÓ³Éä
+		//å…³é”®å­—æ˜ å°„
 		{"i8", TokenType::I8},
 		{"u8", TokenType::U8},
 		{"i16", TokenType::I16},
@@ -235,7 +235,7 @@ const enum TokenType Parser::GetTerminalType(const string name)
 		{"loop", TokenType::LOOP},
 		{"break", TokenType::BREAK},
 		{"continue", TokenType::CONTINUE},
-		//ÌØÊâ±ê¼Ç
+		//ç‰¹æ®Šæ ‡è®°
 		{"ID", TokenType::Identifier},
 		{"NUM", TokenType::i32_},
 		{"CHAR", TokenType::char_},
@@ -250,48 +250,48 @@ const enum TokenType Parser::GetTerminalType(const string name)
 
 void Parser::ComputeFirsts()
 {
-	bool changed = true;//±¾ÂÖÑ­»·ËùÓĞ²úÉúÊ½ÊÇ·ñÓĞFIRST¼¯ºÏ¸Ä±ä
-	bool noepsilon = true;//±¾²úÉúÊ½ÓÒ²àÃ¿Ò»¸ö·ûºÅÑ­»·µ±Ç°·ûºÅÊÇ·ñÓĞFIRST¼¯ÖĞ°üº¬¦Å
-	bool allepsilon = true;//±¾²úÉúÊ½ÓÒ²àÃ¿Ò»¸ö·ûºÅÑ­»·ËùÓĞ·ûºÅÊÇ·ñFIRST¼¯ÖĞ¾ù°üº¬¦Å
+	bool changed = true;//æœ¬è½®å¾ªç¯æ‰€æœ‰äº§ç”Ÿå¼æ˜¯å¦æœ‰FIRSTé›†åˆæ”¹å˜
+	bool noepsilon = true;//æœ¬äº§ç”Ÿå¼å³ä¾§æ¯ä¸€ä¸ªç¬¦å·å¾ªç¯å½“å‰ç¬¦å·æ˜¯å¦æœ‰FIRSTé›†ä¸­åŒ…å«Îµ
+	bool allepsilon = true;//æœ¬äº§ç”Ÿå¼å³ä¾§æ¯ä¸€ä¸ªç¬¦å·å¾ªç¯æ‰€æœ‰ç¬¦å·æ˜¯å¦FIRSTé›†ä¸­å‡åŒ…å«Îµ
 	firsts.resize(nonTerminals.size());
 	while (changed) {
 		changed = false;
 		for (Production prod : productions) {
 			const Symbol left = prod.left;
 			if (left.isTerminal)
-				continue;//Õı³£Çé¿ö×ó²àÎª·ÇÖÕ½á·û£¬Ö´ĞĞ²»µ½
-			set<TokenType>& leftfirst = firsts[left.nonterminalId];//µ±Ç°²úÉúÊ½×ó²à·ÇÖÕ½á·ûµÄfirst¼¯ºÏ
-			//²úÉúÊ½ÓÒ²àÎª¦Å
+				continue;//æ­£å¸¸æƒ…å†µå·¦ä¾§ä¸ºéç»ˆç»“ç¬¦ï¼Œæ‰§è¡Œä¸åˆ°
+			set<TokenType>& leftfirst = firsts[left.nonterminalId];//å½“å‰äº§ç”Ÿå¼å·¦ä¾§éç»ˆç»“ç¬¦çš„firsté›†åˆ
+			//äº§ç”Ÿå¼å³ä¾§ä¸ºÎµ
 			if (prod.right.empty()) {
-				if (leftfirst.insert(EPSILON).second)//¦ÅÎªĞÂÌí¼Ó
+				if (leftfirst.insert(EPSILON).second)//Îµä¸ºæ–°æ·»åŠ 
 					changed = true;
 			}
-			//²úÉúÊ½ÓÒ²à¿ªÊ¼Îª£¨·Ç£©ÖÕ½á·û£¬ÎªÖÕ½á·ûÔÚµÚÒ»´ÎÑ­»·ÖĞbreak
+			//äº§ç”Ÿå¼å³ä¾§å¼€å§‹ä¸ºï¼ˆéï¼‰ç»ˆç»“ç¬¦ï¼Œä¸ºç»ˆç»“ç¬¦åœ¨ç¬¬ä¸€æ¬¡å¾ªç¯ä¸­break
 			else {
 				allepsilon = true;
-				for (Symbol sym : prod.right) {//²úÉúÊ½ÓÒ²àµÄÃ¿Ò»¸ö·ûºÅ
-					if (sym.isTerminal) {//ÓöÖÕ½á·ûÔò¼ÓÈëFIRST(¸ÃÖÕ½á·û)ºó½áÊø
-						if (leftfirst.insert(sym.terminalId).second)//ÖÕ½á·ûÎªĞÂÌí¼Ó
+				for (Symbol sym : prod.right) {//äº§ç”Ÿå¼å³ä¾§çš„æ¯ä¸€ä¸ªç¬¦å·
+					if (sym.isTerminal) {//é‡ç»ˆç»“ç¬¦åˆ™åŠ å…¥FIRST(è¯¥ç»ˆç»“ç¬¦)åç»“æŸ
+						if (leftfirst.insert(sym.terminalId).second)//ç»ˆç»“ç¬¦ä¸ºæ–°æ·»åŠ 
 							changed = true;
 						allepsilon = false;
-						break;//½áÊø
+						break;//ç»“æŸ
 					}
-					else {//Óö·ÇÖÕ½á·ûÔò¼ÓÈëFIRST(¸Ã·ÇÖÕ½á·û)ºó¼ÌĞø²éÕÒ
+					else {//é‡éç»ˆç»“ç¬¦åˆ™åŠ å…¥FIRST(è¯¥éç»ˆç»“ç¬¦)åç»§ç»­æŸ¥æ‰¾
 						noepsilon = true;
-						for (TokenType firstele : firsts[sym.nonterminalId])//·ÇÖÕ½á·ûµÄÃ¿Ò»¸öÒÑÖªFIRSTÔªËØ
-							if (firstele != EPSILON) {//Ìí¼ÓFIRST(¸Ã·ÇÖÕ½á·û)-{¦Å}
-								if (leftfirst.insert(firstele).second)//ÖÕ½á·ûÎªĞÂÌí¼Ó
+						for (TokenType firstele : firsts[sym.nonterminalId])//éç»ˆç»“ç¬¦çš„æ¯ä¸€ä¸ªå·²çŸ¥FIRSTå…ƒç´ 
+							if (firstele != EPSILON) {//æ·»åŠ FIRST(è¯¥éç»ˆç»“ç¬¦)-{Îµ}
+								if (leftfirst.insert(firstele).second)//ç»ˆç»“ç¬¦ä¸ºæ–°æ·»åŠ 
 									changed = true;
 							}
 							else
 								noepsilon = false;
-						if (noepsilon) {//FIRST¼¯ºÏÖĞÈç¹ûÃ»ÓĞ¦ÅÔò²éÕÒµ½¸Ã·ÇÖÕ½á·ûºó½áÊø
+						if (noepsilon) {//FIRSTé›†åˆä¸­å¦‚æœæ²¡æœ‰Îµåˆ™æŸ¥æ‰¾åˆ°è¯¥éç»ˆç»“ç¬¦åç»“æŸ
 							allepsilon = false;
 							break;
 						}
 					}
 				}
-				if (allepsilon && leftfirst.insert(EPSILON).second)//²úÉúÊ½ÓÒ²àËùÓĞ·ûºÅFIRST¼¯¾ù°üº¬¦Å£¬Ìí¼Ó¦Åµ½FIRST(×ó²à·ûºÅ)
+				if (allepsilon && leftfirst.insert(EPSILON).second)//äº§ç”Ÿå¼å³ä¾§æ‰€æœ‰ç¬¦å·FIRSTé›†å‡åŒ…å«Îµï¼Œæ·»åŠ Îµåˆ°FIRST(å·¦ä¾§ç¬¦å·)
 					changed = true;
 			}
 		}
@@ -302,26 +302,26 @@ const set<enum TokenType> Parser::First(const vector<Symbol>& symbols)
 {
 	set<TokenType> firsteles;
 	bool allepsilon = true;
-	for (Symbol sym : symbols) {//¾äĞÍµÄÃ¿Ò»¸ö·ûºÅ
+	for (Symbol sym : symbols) {//å¥å‹çš„æ¯ä¸€ä¸ªç¬¦å·
 		bool noepsilon = true;
-		if (sym.isTerminal) {//ÓöÖÕ½á·ûÔòÖÕ½á·û¼ÓÈë¼¯ºÏºó½áÊø
+		if (sym.isTerminal) {//é‡ç»ˆç»“ç¬¦åˆ™ç»ˆç»“ç¬¦åŠ å…¥é›†åˆåç»“æŸ
 			firsteles.insert(sym.terminalId);
 			allepsilon = false;
-			break;//½áÊø
+			break;//ç»“æŸ
 		}
-		else {//Óö·ÇÖÕ½á·û
-			for (TokenType firstele : firsts[sym.nonterminalId])//·ÇÖÕ½á·ûµÄÃ¿Ò»¸öFIRSTÔªËØ
-				if (firstele != EPSILON)//Ìí¼ÓFIRST(¸Ã·ÇÖÕ½á·û)-{¦Å}
+		else {//é‡éç»ˆç»“ç¬¦
+			for (TokenType firstele : firsts[sym.nonterminalId])//éç»ˆç»“ç¬¦çš„æ¯ä¸€ä¸ªFIRSTå…ƒç´ 
+				if (firstele != EPSILON)//æ·»åŠ FIRST(è¯¥éç»ˆç»“ç¬¦)-{Îµ}
 					firsteles.insert(firstele);
 				else
 					noepsilon = false;
-			if (noepsilon) {//FIRST¼¯ºÏÖĞÈç¹ûÃ»ÓĞ¦ÅÔò²éÕÒµ½¸Ã·ÇÖÕ½á·ûºó½áÊø
+			if (noepsilon) {//FIRSTé›†åˆä¸­å¦‚æœæ²¡æœ‰Îµåˆ™æŸ¥æ‰¾åˆ°è¯¥éç»ˆç»“ç¬¦åç»“æŸ
 				allepsilon = false;
 				break;
 			}
 		}
 	}
-	if (allepsilon)//symbolsÎª¦Å/symbolsËùÓĞ·ûºÅFIRST¼¯¾ù°üº¬¦Å£¬Ìí¼Ó¦Åµ½FIRST(symbols)
+	if (allepsilon)//symbolsä¸ºÎµ/symbolsæ‰€æœ‰ç¬¦å·FIRSTé›†å‡åŒ…å«Îµï¼Œæ·»åŠ Îµåˆ°FIRST(symbols)
 		firsteles.insert(EPSILON);
 	return firsteles;
 }
@@ -331,38 +331,38 @@ const LR1ItemSet Parser::Closure(LR1ItemSet itemset)
 	bool added = true;
 	while (added) {
 		added = false;
-		//IÖĞµÄÃ¿¸öÏî[A¡ú¦Á¡¤B¦Â,a]
+		//Iä¸­çš„æ¯ä¸ªé¡¹[Aâ†’Î±Â·BÎ²,a]
 		for (const LR1Item& item : itemset.items) {
-			//ÕÒ³öÃ¿¸öLR1ÏîÄ¿µÄ²úÉúÊ½ÓÒ²¿
-			vector<Symbol> prodRight = productions[item.productionIndex].right;//¦ÁB¦Â
+			//æ‰¾å‡ºæ¯ä¸ªLR1é¡¹ç›®çš„äº§ç”Ÿå¼å³éƒ¨
+			vector<Symbol> prodRight = productions[item.productionIndex].right;//Î±BÎ²
 			int dotPos = item.dotPosition;
-			if (dotPos < int(prodRight.size())) {//ÒÆ½øÏî£¬A¡ú¦Á¡¤B¦Â,a£¨¦ÂÓĞ¿ÉÄÜÎª¦Å£©
+			if (dotPos < int(prodRight.size())) {//ç§»è¿›é¡¹ï¼ŒAâ†’Î±Â·BÎ²,aï¼ˆÎ²æœ‰å¯èƒ½ä¸ºÎµï¼‰
 				Symbol nextSym = prodRight[dotPos];//B
-				//½öÎª·ÇÖÕ½á·ûÊ±¼ÌĞøÇó½â
+				//ä»…ä¸ºéç»ˆç»“ç¬¦æ—¶ç»§ç»­æ±‚è§£
 				if (!nextSym.isTerminal) {
-					//Çó¦Âa
-					vector<Symbol> beta;//¦Âa
+					//æ±‚Î²a
+					vector<Symbol> beta;//Î²a
 					TokenType lookahead = item.lookahead;//a
-					for (size_t i = dotPos + 1; i < prodRight.size(); ++i)//¼ÓÈë¦Â£¬¦Â=¦ÅÊ±Î´½øÈëÑ­»·
+					for (size_t i = dotPos + 1; i < prodRight.size(); ++i)//åŠ å…¥Î²ï¼ŒÎ²=Îµæ—¶æœªè¿›å…¥å¾ªç¯
 						beta.push_back(prodRight[i]);
-					if (beta.empty() || lookahead != EPSILON)//¦Â¡Ù¦Å,a=¦Å£¬²»¼ÓÈëa
-						beta.push_back(Symbol(lookahead));//¼ÓÈëa
-					//G'ÖĞµÄÃ¿¸ö²úÉúÊ½B¡ú¦Ã
-					set<TokenType>firstbeta = First(beta);//FIRST(¦Âa)
+					if (beta.empty() || lookahead != EPSILON)//Î²â‰ Îµ,a=Îµï¼Œä¸åŠ å…¥a
+						beta.push_back(Symbol(lookahead));//åŠ å…¥a
+					//G'ä¸­çš„æ¯ä¸ªäº§ç”Ÿå¼Bâ†’Î³
+					set<TokenType>firstbeta = First(beta);//FIRST(Î²a)
 					for (size_t i = 0; i < productions.size(); i++) {
 						if (productions[i].left != nextSym)
 							continue;
-						//FIRST(¦Âa)ÖĞµÄÃ¿¸öÖÕ½á·ûºÅb
+						//FIRST(Î²a)ä¸­çš„æ¯ä¸ªç»ˆç»“ç¬¦å·b
 						for (TokenType b : firstbeta) {
-							if (itemset.items.insert(LR1Item(i, 0, b)).second)//ÖÕ½á·ûÎªĞÂÌí¼Ó
+							if (itemset.items.insert(LR1Item(i, 0, b)).second)//ç»ˆç»“ç¬¦ä¸ºæ–°æ·»åŠ 
 								added = true;
 						}
 					}
 				}
 			}
 			else if (dotPos > int(prodRight.size()))
-				throw runtime_error("LR1ÏîÄ¿ÖĞ¡¤Î»ÖÃ·Ç·¨");
-			//¡¤ÔÚ×îºóÖ±½Ó·µ»Ø£¬ÎŞĞè²Ù×÷
+				throw runtime_error("LR1é¡¹ç›®ä¸­Â·ä½ç½®éæ³•");
+			//Â·åœ¨æœ€åç›´æ¥è¿”å›ï¼Œæ— éœ€æ“ä½œ
 		}
 	}
 	return itemset;
@@ -370,11 +370,11 @@ const LR1ItemSet Parser::Closure(LR1ItemSet itemset)
 
 const LR1ItemSet Parser::Goto(const LR1ItemSet& itemset, const Symbol& sym)
 {
-	LR1ItemSet gotoset;//½«J³õÊ¼»¯Îª¿Õ¼¯;
-	for (const LR1Item& item : itemset.items) {//IÖĞµÄÃ¿¸öÏî¡¸A¡ú¦Á¡¤X¦Â,a]
+	LR1ItemSet gotoset;//å°†Jåˆå§‹åŒ–ä¸ºç©ºé›†;
+	for (const LR1Item& item : itemset.items) {//Iä¸­çš„æ¯ä¸ªé¡¹ã€ŒAâ†’Î±Â·XÎ²,a]
 		int dotPosition = item.dotPosition;
 		int productionIndex = item.productionIndex;
-		if (dotPosition < int(productions[productionIndex].right.size()) && productions[productionIndex].right[dotPosition] == sym)//X¦Â²»Îª¿ÕÇÒXÎªsym
+		if (dotPosition < int(productions[productionIndex].right.size()) && productions[productionIndex].right[dotPosition] == sym)//XÎ²ä¸ä¸ºç©ºä¸”Xä¸ºsym
 			gotoset.items.insert(LR1Item(productionIndex, dotPosition + 1, item.lookahead));
 	}
 	return Closure(gotoset);
@@ -385,131 +385,131 @@ void Parser::addReduceEntry(int ItemsetsIndex)
 	const LR1ItemSet& itemset = Itemsets[ItemsetsIndex];
 	for (const LR1Item& item : itemset.items)
 		if (item.dotPosition > int(productions[item.productionIndex].right.size()))
-			throw runtime_error("LR1ÏîÄ¿ÖĞ¡¤Î»ÖÃ·Ç·¨");
-		else if (item.dotPosition == productions[item.productionIndex].right.size())//A->B¡¤,a
+			throw runtime_error("LR1é¡¹ç›®ä¸­Â·ä½ç½®éæ³•");
+		else if (item.dotPosition == productions[item.productionIndex].right.size())//A->BÂ·,a
 			if (item.productionIndex)
-				writeActionTable(ItemsetsIndex, item.lookahead, ActionTableEntry{ Action::reduce , item.productionIndex });//¶ÔreduceÌîĞ´±íÏî
+				writeActionTable(ItemsetsIndex, item.lookahead, ActionTableEntry{ Action::reduce , item.productionIndex });//å¯¹reduceå¡«å†™è¡¨é¡¹
 			else
-				writeActionTable(ItemsetsIndex, item.lookahead, ActionTableEntry{ Action::accept , item.productionIndex });//¶ÔreduceÌîĞ´±íÏî
+				writeActionTable(ItemsetsIndex, item.lookahead, ActionTableEntry{ Action::accept , item.productionIndex });//å¯¹reduceå¡«å†™è¡¨é¡¹
 }
 
 void Parser::writeActionTable(int itemset, int terminal, const ActionTableEntry& entry)
 {
-	//½â¾öÒ»¸ö¹éÔ¼/¹éÔ¼³åÍ»Ê±,Ñ¡ÔñÔÚ¹æÔ¼ÖĞÁĞÔÚÇ°ÃæµÄÄÇ¸ö³åÍ»²úÉúÊ½
-	//½â¾öÒÆÈë/¹éÔ¼³åÍ»Ê±×ÜÊÇÑ¡ÔñÒÆÈë¡£Õâ¸ö¹æÔòÕıÈ·µØ½â¾öÁËÒòÎªĞü¿Õelse¶şÒåĞÔ¶ø²úÉúµÄÒÆÈë/¹éÔ¼³åÍ»
+	//è§£å†³ä¸€ä¸ªå½’çº¦/å½’çº¦å†²çªæ—¶,é€‰æ‹©åœ¨è§„çº¦ä¸­åˆ—åœ¨å‰é¢çš„é‚£ä¸ªå†²çªäº§ç”Ÿå¼
+	//è§£å†³ç§»å…¥/å½’çº¦å†²çªæ—¶æ€»æ˜¯é€‰æ‹©ç§»å…¥ã€‚è¿™ä¸ªè§„åˆ™æ­£ç¡®åœ°è§£å†³äº†å› ä¸ºæ‚¬ç©ºelseäºŒä¹‰æ€§è€Œäº§ç”Ÿçš„ç§»å…¥/å½’çº¦å†²çª
 	ActionTableEntry& currEntry = actionTable[itemset][terminal];
 
-	if (currEntry == entry)//ÒÑÌîĞ´ÇÒÌîĞ´ÏîÎŞ³åÍ»
+	if (currEntry == entry)//å·²å¡«å†™ä¸”å¡«å†™é¡¹æ— å†²çª
 		return;
-	else if (currEntry.act == Action::error) {//Î´ÌîĞ´£¬ÎŞ³åÍ»
-		currEntry = entry;//ÌîĞ´±íÏî
-		return;
-	}
-	else if (currEntry.act == Action::accept || entry.act == Action::accept) {//²»¿ÉÄÜµÄ³åÍ»
-		DEBUG_CERR << "LR1·ÖÎö±íaccept³åÍ»£¬Ó¦¼ì²éÂß¼­" << endl;
+	else if (currEntry.act == Action::error) {//æœªå¡«å†™ï¼Œæ— å†²çª
+		currEntry = entry;//å¡«å†™è¡¨é¡¹
 		return;
 	}
-	else if (entry.act == Action::error) {//²»¿ÉÄÜµÄ³åÍ»
-		DEBUG_CERR << "²»Ó¦ÏòLR1·ÖÎö±íÖĞÌîÈëerror£¬Ó¦¼ì²éÂß¼­" << endl;
+	else if (currEntry.act == Action::accept || entry.act == Action::accept) {//ä¸å¯èƒ½çš„å†²çª
+		DEBUG_CERR << "LR1åˆ†æè¡¨acceptå†²çªï¼Œåº”æ£€æŸ¥é€»è¾‘" << endl;
 		return;
 	}
-	else if (currEntry.act == Action::shift && entry.act == Action::shift) {//²»¿ÉÄÜµÄ³åÍ»
-		DEBUG_CERR << "LR1·ÖÎö±íÒÆ½ø-ÒÆ½ø³åÍ»£¬Ó¦¼ì²éÂß¼­" << endl;
+	else if (entry.act == Action::error) {//ä¸å¯èƒ½çš„å†²çª
+		DEBUG_CERR << "ä¸åº”å‘LR1åˆ†æè¡¨ä¸­å¡«å…¥errorï¼Œåº”æ£€æŸ¥é€»è¾‘" << endl;
 		return;
 	}
-	//´¦ÀíÕı³£Çé¿öÏÂ¿ÉÄÜ²úÉúµÄ³åÍ»£º¹éÔ¼-¹éÔ¼³åÍ»ÓëÒÆ½ø-¹éÔ¼³åÍ»£¬¿ÉÒÔÊ¹ÓÃÓÅÏÈ¼¶¹æÔò»ò±¨¸æ³åÍ»
-	//Êä³öµ±Ç°×´Ì¬¼¯ĞÅÏ¢
-	DEBUG_CERR << "µ±Ç°×´Ì¬Ïî¼¯ I" << itemset << ":" << endl;
+	else if (currEntry.act == Action::shift && entry.act == Action::shift) {//ä¸å¯èƒ½çš„å†²çª
+		DEBUG_CERR << "LR1åˆ†æè¡¨ç§»è¿›-ç§»è¿›å†²çªï¼Œåº”æ£€æŸ¥é€»è¾‘" << endl;
+		return;
+	}
+	//å¤„ç†æ­£å¸¸æƒ…å†µä¸‹å¯èƒ½äº§ç”Ÿçš„å†²çªï¼šå½’çº¦-å½’çº¦å†²çªä¸ç§»è¿›-å½’çº¦å†²çªï¼Œå¯ä»¥ä½¿ç”¨ä¼˜å…ˆçº§è§„åˆ™æˆ–æŠ¥å‘Šå†²çª
+	//è¾“å‡ºå½“å‰çŠ¶æ€é›†ä¿¡æ¯
+	DEBUG_CERR << "å½“å‰çŠ¶æ€é¡¹é›† I" << itemset << ":" << endl;
 	for (const LR1Item& item : Itemsets[itemset].items) {
 		const Production& prod = productions[item.productionIndex];
 		DEBUG_CERR << "  " << prod.left.name << " -> ";
 		for (size_t j = 0; j < prod.right.size(); j++) {
 			if (j == item.dotPosition)
-				DEBUG_CERR << "¡¤ ";
+				DEBUG_CERR << "Â· ";
 			DEBUG_CERR << prod.right[j].name << " ";
 		}
 		if (item.dotPosition == prod.right.size())
-			DEBUG_CERR << "¡¤";
+			DEBUG_CERR << "Â·";
 		DEBUG_CERR << ", " << TokenTypeToString(item.lookahead) << endl;
 	}
-	//Êä³ö¹²Í¬µÄ³åÍ»ĞÅÏ¢
-	DEBUG_CERR << "×´Ì¬Ïî¼¯ I" << itemset << " Õë¶Ô·ûºÅ " << TokenTypeToString(TokenType(terminal)) << " ·¢Éú";
-	//¹éÔ¼-¹éÔ¼³åÍ»
-	if (currEntry.act == Action::reduce && entry.act == Action::reduce) {//¹éÔ¼-¹éÔ¼³åÍ»
-		DEBUG_CERR << "LR1·ÖÎö±í¹éÔ¼-¹éÔ¼³åÍ»" << endl;
-		DEBUG_CERR << "	¹æÔ¼²Ù×÷1: Ê¹ÓÃ²úÉúÊ½ " << productions[currEntry.num].left.name << " -> ";
+	//è¾“å‡ºå…±åŒçš„å†²çªä¿¡æ¯
+	DEBUG_CERR << "çŠ¶æ€é¡¹é›† I" << itemset << " é’ˆå¯¹ç¬¦å· " << TokenTypeToString(TokenType(terminal)) << " å‘ç”Ÿ";
+	//å½’çº¦-å½’çº¦å†²çª
+	if (currEntry.act == Action::reduce && entry.act == Action::reduce) {//å½’çº¦-å½’çº¦å†²çª
+		DEBUG_CERR << "LR1åˆ†æè¡¨å½’çº¦-å½’çº¦å†²çª" << endl;
+		DEBUG_CERR << "	è§„çº¦æ“ä½œ1: ä½¿ç”¨äº§ç”Ÿå¼ " << productions[currEntry.num].left.name << " -> ";
 		for (const Symbol& sym : productions[currEntry.num].right)
 			DEBUG_CERR << sym.name << " ";
-		DEBUG_CERR << endl << "	¹æÔ¼²Ù×÷2: Ê¹ÓÃ²úÉúÊ½ " << productions[entry.num].left.name << " -> ";
+		DEBUG_CERR << endl << "	è§„çº¦æ“ä½œ2: ä½¿ç”¨äº§ç”Ÿå¼ " << productions[entry.num].left.name << " -> ";
 		for (const Symbol& sym : productions[entry.num].right)
 			DEBUG_CERR << sym.name << " ";
-		DEBUG_CERR << endl << "½â¾ö·½°¸: ¹éÔ¼/¹éÔ¼³åÍ»Ê±£¬Ñ¡ÔñÔÚ¹æÔ¼ÖĞÁĞÔÚÇ°ÃæµÄÄÇ¸ö³åÍ»²úÉúÊ½" << endl;
+		DEBUG_CERR << endl << "è§£å†³æ–¹æ¡ˆ: å½’çº¦/å½’çº¦å†²çªæ—¶ï¼Œé€‰æ‹©åœ¨è§„çº¦ä¸­åˆ—åœ¨å‰é¢çš„é‚£ä¸ªå†²çªäº§ç”Ÿå¼" << endl;
 		if (entry.num < currEntry.num) {
-			DEBUG_CERR << "	±£Áô¹æÔ¼²Ù×÷2" << endl << endl;
+			DEBUG_CERR << "	ä¿ç•™è§„çº¦æ“ä½œ2" << endl << endl;
 			currEntry = entry;
 		}
 		else
-			DEBUG_CERR << "	±£Áô¹æÔ¼²Ù×÷1" << endl << endl;
+			DEBUG_CERR << "	ä¿ç•™è§„çº¦æ“ä½œ1" << endl << endl;
 		return;
 	}
-	//ÒÆ½ø-¹éÔ¼³åÍ»
+	//ç§»è¿›-å½’çº¦å†²çª
 	int shiftnum = currEntry.act == Action::shift ? currEntry.num : entry.num;
 	int reducenum = currEntry.act == Action::reduce ? currEntry.num : entry.num;
-	DEBUG_CERR << "LR1·ÖÎö±íÒÆ½ø-¹éÔ¼³åÍ»" << endl;
-	DEBUG_CERR << "ÒÆ½ø²Ù×÷: ÒÆ½øµ½×´Ì¬ " << shiftnum << endl;
-	DEBUG_CERR << "¹æÔ¼²Ù×÷: Ê¹ÓÃ²úÉúÊ½ " << productions[reducenum].left.name << " -> ";
+	DEBUG_CERR << "LR1åˆ†æè¡¨ç§»è¿›-å½’çº¦å†²çª" << endl;
+	DEBUG_CERR << "ç§»è¿›æ“ä½œ: ç§»è¿›åˆ°çŠ¶æ€ " << shiftnum << endl;
+	DEBUG_CERR << "è§„çº¦æ“ä½œ: ä½¿ç”¨äº§ç”Ÿå¼ " << productions[reducenum].left.name << " -> ";
 	for (const Symbol& sym : productions[reducenum].right)
 		DEBUG_CERR << sym.name << " ";
 	DEBUG_CERR << endl;
-	DEBUG_CERR << "½â¾ö·½°¸: ÒÆÈë/¹éÔ¼³åÍ»Ê±×ÜÊÇÑ¡ÔñÒÆÈë" << endl << endl;
-	if (currEntry.act == Action::reduce && entry.act == Action::shift)//ÒÆ½ø-¹éÔ¼³åÍ»
-		currEntry = entry; //Ñ¡ÔñÒÆ½ø²Ù×÷
-	//else if (currEntry.act == Action::shift && entry.act == Action::reduce)//ÒÆ½ø-¹éÔ¼³åÍ»
-	//	//ÎŞ²Ù×÷
+	DEBUG_CERR << "è§£å†³æ–¹æ¡ˆ: ç§»å…¥/å½’çº¦å†²çªæ—¶æ€»æ˜¯é€‰æ‹©ç§»å…¥" << endl << endl;
+	if (currEntry.act == Action::reduce && entry.act == Action::shift)//ç§»è¿›-å½’çº¦å†²çª
+		currEntry = entry; //é€‰æ‹©ç§»è¿›æ“ä½œ
+	//else if (currEntry.act == Action::shift && entry.act == Action::reduce)//ç§»è¿›-å½’çº¦å†²çª
+	//	//æ— æ“ä½œ
 }
 
 void Parser::Items()
 {
-	//½«C³õÊ¼»¯Îª{CLOSURE}({[S'¡ú¡¤S,$]});
+	//å°†Cåˆå§‹åŒ–ä¸º{CLOSURE}({[S'â†’Â·S,$]});
 	Itemsets.clear();
-	Itemsets.push_back(Closure(LR1ItemSet{ set<LR1Item>{LR1Item(0, 0, TokenType::End)} }));//productionIndexÓëaugmentProductionÖĞÍØ¹ãÊ±Ìí¼ÓÎ»ÖÃÒª¶ÔÓ¦
+	Itemsets.push_back(Closure(LR1ItemSet{ set<LR1Item>{LR1Item(0, 0, TokenType::End)} }));//productionIndexä¸augmentProductionä¸­æ‹“å¹¿æ—¶æ·»åŠ ä½ç½®è¦å¯¹åº”
 
 	int nonTerminalsNum = nonTerminals.size();
-	actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
-	gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
+	actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
+	gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
 
 	bool added = true;
-	while (added) {//Ñ­»·Ö±µ½²»ÔÙÓĞĞÂµÄÏî¼¯¼ÓÈëµ½CÖĞ
+	while (added) {//å¾ªç¯ç›´åˆ°ä¸å†æœ‰æ–°çš„é¡¹é›†åŠ å…¥åˆ°Cä¸­
 		added = false;
-		for (int index = 0; index < int(Itemsets.size()); ++index) {//CÖĞµÄÃ¿¸öÏî¼¯I
+		for (int index = 0; index < int(Itemsets.size()); ++index) {//Cä¸­çš„æ¯ä¸ªé¡¹é›†I
 			LR1ItemSet I = Itemsets[index];
-			//Ã¿¸öÎÄ·¨·ûºÅX
-			for (int i = TokenType::None + 1; i <= TokenType::End; ++i) {//Ã¿¸öÎÄ·¨·ûºÅX£¨ÖÕ½á·û£©
+			//æ¯ä¸ªæ–‡æ³•ç¬¦å·X
+			for (int i = TokenType::None + 1; i <= TokenType::End; ++i) {//æ¯ä¸ªæ–‡æ³•ç¬¦å·Xï¼ˆç»ˆç»“ç¬¦ï¼‰
 				Symbol X((TokenType(i)));
 				const LR1ItemSet gotoset = Goto(I, X);
-				if (!gotoset.items.empty() && find(Itemsets.begin(), Itemsets.end(), gotoset) == Itemsets.end()) {//GOTO(I,X)·Ç¿ÕÇÒ²»ÔÚCÖĞ
-					Itemsets.push_back(gotoset);//½«GOTO(I,X)¼ÓÈëCÖĞ
+				if (!gotoset.items.empty() && find(Itemsets.begin(), Itemsets.end(), gotoset) == Itemsets.end()) {//GOTO(I,X)éç©ºä¸”ä¸åœ¨Cä¸­
+					Itemsets.push_back(gotoset);//å°†GOTO(I,X)åŠ å…¥Cä¸­
 
-					actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
-					gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
+					actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
+					gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
 					added = true;
 				}
 				if (!gotoset.items.empty())
-					writeActionTable(index, i, ActionTableEntry{ Action::shift, distance(Itemsets.begin(), find(Itemsets.begin(), Itemsets.end(), gotoset)) });//¶ÔshiftÌîĞ´±íÏî
+					writeActionTable(index, i, ActionTableEntry{ Action::shift, distance(Itemsets.begin(), find(Itemsets.begin(), Itemsets.end(), gotoset)) });//å¯¹shiftå¡«å†™è¡¨é¡¹
 			}
-			for (pair<const string, unsigned int> sym : nonTerminals) {//Ã¿¸öÎÄ·¨·ûºÅX£¨·ÇÖÕ½á·û£©
-				Symbol X = GetNonTerminal(sym.first);//////////////////////////È¥³ıSymbol.nameÊôĞÔºóÊ¹ÓÃSymbol X(sym.second);//////////////////////////
+			for (pair<const string, unsigned int> sym : nonTerminals) {//æ¯ä¸ªæ–‡æ³•ç¬¦å·Xï¼ˆéç»ˆç»“ç¬¦ï¼‰
+				Symbol X = GetNonTerminal(sym.first);//////////////////////////å»é™¤Symbol.nameå±æ€§åä½¿ç”¨Symbol X(sym.second);//////////////////////////
 				const LR1ItemSet gotoset = Goto(I, X);
-				vector<LR1ItemSet>::iterator it = find(Itemsets.begin(), Itemsets.end(), gotoset);//GOTOµ½µÄLR1ÏîÄ¿¼¯µü´úÆ÷
-				if (!gotoset.items.empty() && it == Itemsets.end()) {//GOTO(I,X)·Ç¿ÕÇÒ²»ÔÚCÖĞ
-					Itemsets.push_back(gotoset);//½«GOTO(I,X)¼ÓÈëCÖĞ
+				vector<LR1ItemSet>::iterator it = find(Itemsets.begin(), Itemsets.end(), gotoset);//GOTOåˆ°çš„LR1é¡¹ç›®é›†è¿­ä»£å™¨
+				if (!gotoset.items.empty() && it == Itemsets.end()) {//GOTO(I,X)éç©ºä¸”ä¸åœ¨Cä¸­
+					Itemsets.push_back(gotoset);//å°†GOTO(I,X)åŠ å…¥Cä¸­
 
-					actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
-					gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableĞĞÊıÓëItemsetsÍ¬²½±ä»¯
+					actionTable.emplace_back(vector<ActionTableEntry>(TokenType::End + 1));//actionTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
+					gotoTable.emplace_back(vector<int>(nonTerminalsNum, -1));//gotoTableè¡Œæ•°ä¸ItemsetsåŒæ­¥å˜åŒ–
 					added = true;
 				}
 				if (!gotoset.items.empty())
-					gotoTable[index][sym.second] = distance(Itemsets.begin(), find(Itemsets.begin(), Itemsets.end(), gotoset));//¶ÔgotoÌîĞ´±íÏî
+					gotoTable[index][sym.second] = distance(Itemsets.begin(), find(Itemsets.begin(), Itemsets.end(), gotoset));//å¯¹gotoå¡«å†™è¡¨é¡¹
 			}
 			addReduceEntry(index);
 		}
@@ -531,45 +531,45 @@ Parser::Parser(Scanner& lexer, const string filepath) :lexer(lexer), look(TokenT
 
 void Parser::SyntaxAnalysis()
 {
-	stack<int> stateStack;//×´Ì¬Õ»
-	stack<Symbol> tokenStack;//·ûºÅÕ»
-	stateStack.push(0);//ÍØ¹ãÎÄ·¨µÄÆğÊ¼±äÔª¶ÔÓ¦LR1ÏîÄ¿¼¯¿ªÊ¼
+	stack<int> stateStack;//çŠ¶æ€æ ˆ
+	stack<Symbol> tokenStack;//ç¬¦å·æ ˆ
+	stateStack.push(0);//æ‹“å¹¿æ–‡æ³•çš„èµ·å§‹å˜å…ƒå¯¹åº”LR1é¡¹ç›®é›†å¼€å§‹
 	tokenStack.push(TokenType::End);
 
-	GetToken();//ÁîlookÎª¦Ø#µÄµÚÒ»¸ö·ûºÅ
+	GetToken();//ä»¤lookä¸ºÏ‰#çš„ç¬¬ä¸€ä¸ªç¬¦å·
 	while (true) {
-		int s = stateStack.top();//ÁîsÊÇÕ»¶¥µÄ×´Ì¬
-		ActionTableEntry action = actionTable[s][look.type];//sºÍlook¶ÔÓ¦ĞĞ¶¯
-		if (action.act == Action::shift) {//ACTION[s,a]=ÒÆÈëĞÂ×´Ì¬£¨sx£©
-			stateStack.push(action.num);//½«ĞÂ×´Ì¬Ñ¹ÈëÕ»ÖĞ
+		int s = stateStack.top();//ä»¤sæ˜¯æ ˆé¡¶çš„çŠ¶æ€
+		ActionTableEntry action = actionTable[s][look.type];//så’Œlookå¯¹åº”è¡ŒåŠ¨
+		if (action.act == Action::shift) {//ACTION[s,a]=ç§»å…¥æ–°çŠ¶æ€ï¼ˆsxï¼‰
+			stateStack.push(action.num);//å°†æ–°çŠ¶æ€å‹å…¥æ ˆä¸­
 			tokenStack.push(look.type);
 			semanticer.mkleaf(look);
 			GetToken();
 		}
-		else if (action.act == Action::reduce) {//ACTION[s,a]=¹éÔ¼A¡ú¦Â
-			int betalength = productions[action.num].right.size();//|¦Â|
-			for (int i = 0; i < betalength; ++i) {//´ÓÕ»ÖĞµ¯³ö|¦Â|¸ö·ûºÅ;
+		else if (action.act == Action::reduce) {//ACTION[s,a]=å½’çº¦Aâ†’Î²
+			int betalength = productions[action.num].right.size();//|Î²|
+			for (int i = 0; i < betalength; ++i) {//ä»æ ˆä¸­å¼¹å‡º|Î²|ä¸ªç¬¦å·;
 				stateStack.pop();
 				tokenStack.pop();
 			}
-			int t = stateStack.top();//ÁîtÎªµ±Ç°µÄÕ»¶¥×´Ì¬;
+			int t = stateStack.top();//ä»¤tä¸ºå½“å‰çš„æ ˆé¡¶çŠ¶æ€;
 			unsigned int Aid = productions[action.num].left.nonterminalId;//A
-			stateStack.push(gotoTable[t][Aid]);//½«GOTO[t,A]Ñ¹ÈëÕ»ÖĞ
+			stateStack.push(gotoTable[t][Aid]);//å°†GOTO[t,A]å‹å…¥æ ˆä¸­
 			tokenStack.push(Symbol(Aid, productions[action.num].left.name));
-			reduceProductionLists.push_back(productions[action.num]);//Êä³ö²úÉúÊ½A¡ú¦Â
+			reduceProductionLists.push_back(productions[action.num]);//è¾“å‡ºäº§ç”Ÿå¼Aâ†’Î²
 			semanticer.analyze(productions[action.num]);
 		}
 		else if (action.act == Action::accept) {
 			semanticer.addJumpToMain();
-			break;//Óï·¨·ÖÎöÍê³É
+			break;//è¯­æ³•åˆ†æå®Œæˆ
 		}
 		else if (action.act == Action::error) {
-			//´íÎóÕ¹Ê¾
-			lexer.ProcError(string(TokenTypeToString(look.type)) + "Àà±ğ·ûºÅ²»·ûºÏ¸ø¶¨µÄÓï·¨¹æÔò");
-			//¼ÇÂ¼´íÎó
-			AddParseError(look.line, look.column, look.length, string(TokenTypeToString(look.type)) + "Àà±ğ·ûºÅ²»·ûºÏ¸ø¶¨µÄÓï·¨¹æÔò");
-			//Õ¹Ê¾´Ë×´Ì¬¿É½ÓÊÜµÄ´Ê·¨µ¥ÔªÀàĞÍ
-			DEBUG_CERR << "Ô¤ÆÚµÄ´Ê·¨µ¥Ôª: ";
+			//é”™è¯¯å±•ç¤º
+			lexer.ProcError(string(TokenTypeToString(look.type)) + "ç±»åˆ«ç¬¦å·ä¸ç¬¦åˆç»™å®šçš„è¯­æ³•è§„åˆ™");
+			//è®°å½•é”™è¯¯
+			AddParseError(look.line, look.column, look.length, string(TokenTypeToString(look.type)) + "ç±»åˆ«ç¬¦å·ä¸ç¬¦åˆç»™å®šçš„è¯­æ³•è§„åˆ™");
+			//å±•ç¤ºæ­¤çŠ¶æ€å¯æ¥å—çš„è¯æ³•å•å…ƒç±»å‹
+			DEBUG_CERR << "é¢„æœŸçš„è¯æ³•å•å…ƒ: ";
 			bool hasExpected = false;
 			for (int i = 1; i <= int(TokenType::End); i++)
 				if (actionTable[s][i].act != Action::error) {
@@ -579,14 +579,14 @@ void Parser::SyntaxAnalysis()
 					hasExpected = true;
 				}
 			if (!hasExpected)
-				DEBUG_CERR << "ÎŞ·¨È·¶¨";
+				DEBUG_CERR << "æ— æ³•ç¡®å®š";
 			DEBUG_CERR << endl;
-			DEBUG_CERR << "Ìø¹ıµ±Ç°´Ê·¨µ¥Ôª" << endl << endl;
+			DEBUG_CERR << "è·³è¿‡å½“å‰è¯æ³•å•å…ƒ" << endl << endl;
 			if (look.type == TokenType::End)
 				break;
 			GetToken();
 		}
-		////Êä³öµ±Ç°Õ»ÖĞÄÚÈİ
+		////è¾“å‡ºå½“å‰æ ˆä¸­å†…å®¹
 		//stack<Symbol> tempStack = tokenStack;
 		//while (!tempStack.empty()) {
 		//	cout << (tempStack.top().isTerminal ? TokenTypeToString(tempStack.top().terminalId) : tempStack.top().name) << ' ';
@@ -599,9 +599,9 @@ void Parser::SyntaxAnalysis()
 const vector<Production>& Parser::GetProductions() const
 {
 #ifdef ENABLE_NOTING_OUTPUT
-	//Êä³ö²é¿´
-	//´òÓ¡¶ÁÈ¡µÄ²úÉúÊ½£¬ÓÃÓÚµ÷ÊÔ
-	cout << "¶ÁÈ¡µÄ²úÉúÊ½£º" << endl;
+	//è¾“å‡ºæŸ¥çœ‹
+	//æ‰“å°è¯»å–çš„äº§ç”Ÿå¼ï¼Œç”¨äºè°ƒè¯•
+	cout << "è¯»å–çš„äº§ç”Ÿå¼ï¼š" << endl;
 	for (size_t i = 0; i < productions.size(); i++) {
 		const Production& p = productions[i];
 		cout << i << ": " << p.left.name << " -> ";
@@ -622,24 +622,24 @@ const unordered_map<string, unsigned int>& Parser::GetNonTerminals() const
 const vector<set<enum TokenType>>& Parser::GetFirsts() const
 {
 #ifdef ENABLE_NOTING_OUTPUT
-	cout << "ËùÓĞ·ûºÅµÄFIRST£º" << endl;
-	//ÖÕ½á·û
-	cout << "¶ÔÓÚËùÓĞÖÕ½á·û, FIRST(t) = {t}" << endl;
+	cout << "æ‰€æœ‰ç¬¦å·çš„FIRSTï¼š" << endl;
+	//ç»ˆç»“ç¬¦
+	cout << "å¯¹äºæ‰€æœ‰ç»ˆç»“ç¬¦, FIRST(t) = {t}" << endl;
 	for (int i = 0; i <= int(TokenType::End); i++) {
 		TokenType token = TokenType(i);
 		cout << "FIRST(" << TokenTypeToString(token) << ") = { " << TokenTypeToString(token) << " }" << endl;
 	}
-	//·ÇÖÕ½á·û
-	for (const pair<const string, unsigned int>& entry : nonTerminals) {//¶ÔÓÚÃ¿Ò»¸ö·ÇÖÕ½á·û
+	//éç»ˆç»“ç¬¦
+	for (const pair<const string, unsigned int>& entry : nonTerminals) {//å¯¹äºæ¯ä¸€ä¸ªéç»ˆç»“ç¬¦
 		cout << "FIRST(" << entry.first << ")={ ";
 		bool first = true;
-		for (const TokenType& token : firsts[entry.second]) {//·ÇÖÕ½á·ûµÄÃ¿Ò»¸öFIRSTÔªËØ
+		for (const TokenType& token : firsts[entry.second]) {//éç»ˆç»“ç¬¦çš„æ¯ä¸€ä¸ªFIRSTå…ƒç´ 
 			if (!first)
 				cout << ", ";
 			first = false;
 
 			if (token == EPSILON)
-				cout << "¦Å";
+				cout << "Îµ";
 			else
 				cout << TokenTypeToString(token);
 		}
@@ -652,25 +652,25 @@ const vector<set<enum TokenType>>& Parser::GetFirsts() const
 const vector<LR1ItemSet>& Parser::GetItemsets() const
 {
 #ifdef ENABLE_NOTING_OUTPUT
-	cout << "=============== LR1Ïî¼¯×å ===============" << endl;
+	cout << "=============== LR1é¡¹é›†æ— ===============" << endl;
 	for (size_t i = 0; i < Itemsets.size(); i++) {
 		cout << "I" << i << ":" << endl;
 		const LR1ItemSet& itemset = Itemsets[i];
 		for (const LR1Item& item : itemset.items) {
-			//Êä³ö²úÉúÊ½
+			//è¾“å‡ºäº§ç”Ÿå¼
 			const Production& prod = productions[item.productionIndex];
 			cout << "  " << prod.left.name << " -> ";
-			//Êä³öÓÒ²à²¢ÔÚºÏÊÊÎ»ÖÃ²åÈëµãºÅ
+			//è¾“å‡ºå³ä¾§å¹¶åœ¨åˆé€‚ä½ç½®æ’å…¥ç‚¹å·
 			for (size_t j = 0; j < prod.right.size(); j++) {
 				if (j == item.dotPosition)
-					cout << "¡¤ ";
+					cout << "Â· ";
 				cout << prod.right[j].name << " ";
 			}
-			//Èç¹ûµãÔÚ×îÓÒ²à£¬ÔòÔÚ×îºó×·¼Óµã
+			//å¦‚æœç‚¹åœ¨æœ€å³ä¾§ï¼Œåˆ™åœ¨æœ€åè¿½åŠ ç‚¹
 			if (item.dotPosition == prod.right.size())
-				cout << "¡¤";
-			//Êä³öÇ°Õ°·ûºÅ
-			cout << ", " << (item.lookahead == EPSILON ? "¦Å" : TokenTypeToString(item.lookahead)) << endl;
+				cout << "Â·";
+			//è¾“å‡ºå‰ç»ç¬¦å·
+			cout << ", " << (item.lookahead == EPSILON ? "Îµ" : TokenTypeToString(item.lookahead)) << endl;
 		}
 		cout << endl;
 	}
@@ -691,26 +691,26 @@ const vector<vector<int>>& Parser::GetGotoTable() const
 
 void Parser::printParsingTables() const
 {
-	cout << "=============== Action±í ===============" << endl;
-	cout << "×´Ì¬\t";
+	cout << "=============== Actionè¡¨ ===============" << endl;
+	cout << "çŠ¶æ€\t";
 
-	//Êä³öÖÕ½á·û±íÍ·
+	//è¾“å‡ºç»ˆç»“ç¬¦è¡¨å¤´
 	for (int i = 0; i <= int(TokenType::End); i++) {
 		TokenType type = TokenType(i);
 		if (type == TokenType::None)
-			continue; //Ìø¹ıNone
+			continue; //è·³è¿‡None
 		cout << TokenTypeToString(type) << "\t";
 	}
 	cout << endl;
 
-	//Êä³öÃ¿Ò»ĞĞµÄ¶¯×÷
+	//è¾“å‡ºæ¯ä¸€è¡Œçš„åŠ¨ä½œ
 	for (size_t i = 0; i < actionTable.size(); i++) {
 		cout << i << "\t";
 		for (int j = 1; j <= int(TokenType::End); j++) {
 			TokenType type = TokenType(j);
 			const ActionTableEntry& entry = actionTable[i][j];
 
-			//¸ù¾İ¶¯×÷ÀàĞÍÊä³ö²»Í¬µÄ¸ñÊ½
+			//æ ¹æ®åŠ¨ä½œç±»å‹è¾“å‡ºä¸åŒçš„æ ¼å¼
 			switch (entry.act) {
 			case Action::shift:
 				cout << "s" << entry.num << "\t";
@@ -730,16 +730,16 @@ void Parser::printParsingTables() const
 		cout << endl;
 	}
 
-	cout << "\n=============== Goto±í ===============" << endl;
-	cout << "×´Ì¬\t";
+	cout << "\n=============== Gotoè¡¨ ===============" << endl;
+	cout << "çŠ¶æ€\t";
 
-	//Êä³ö·ÇÖÕ½á·û±íÍ·
+	//è¾“å‡ºéç»ˆç»“ç¬¦è¡¨å¤´
 	for (const auto& nt : nonTerminals) {
 		cout << nt.first << "\t";
 	}
 	cout << endl;
 
-	//Êä³öÃ¿Ò»ĞĞµÄÄ¿±ê×´Ì¬
+	//è¾“å‡ºæ¯ä¸€è¡Œçš„ç›®æ ‡çŠ¶æ€
 	for (size_t i = 0; i < gotoTable.size(); i++) {
 		cout << i << "\t";
 		for (size_t j = 0; j < gotoTable[i].size(); j++) {
@@ -764,13 +764,13 @@ const vector<ParseError>& Parser::GetParseErrors() const
 
 void Parser::printSyntaxTree() const
 {
-	cout << "\n=============== Óï·¨Ê÷ ===============\n";
+	cout << "\n=============== è¯­æ³•æ ‘ ===============\n";
 
-	//Ê¹ÓÃÕ»À´Ä£Äâ¹éÔ¼¹ı³Ì£¬¹¹½¨Ê÷½á¹¹
+	//ä½¿ç”¨æ ˆæ¥æ¨¡æ‹Ÿå½’çº¦è¿‡ç¨‹ï¼Œæ„å»ºæ ‘ç»“æ„
 	struct TreeNode {
-		Symbol symbol;              //½Úµã·ûºÅ
-		vector<TreeNode*> children; //Ê¹ÓÃÖ¸Õë±ÜÃâ¸´ÖÆÎÊÌâ
-		string lexeme;              //´ÊËØ(¶ÔÖÕ½á·û)
+		Symbol symbol;              //èŠ‚ç‚¹ç¬¦å·
+		vector<TreeNode*> children; //ä½¿ç”¨æŒ‡é’ˆé¿å…å¤åˆ¶é—®é¢˜
+		string lexeme;              //è¯ç´ (å¯¹ç»ˆç»“ç¬¦)
 
 		TreeNode(const Symbol& s) : symbol(s), lexeme("") {}
 		~TreeNode() {
@@ -781,11 +781,11 @@ void Parser::printSyntaxTree() const
 
 	stack<TreeNode*> nodeStack;
 
-	//´Ó¹éÔ¼ĞòÁĞ¹¹½¨Óï·¨Ê÷
+	//ä»å½’çº¦åºåˆ—æ„å»ºè¯­æ³•æ ‘
 	for (const auto& prod : reduceProductionLists) {
 		TreeNode* node = new TreeNode(prod.left);
 
-		//´ÓÕ»ÖĞµ¯³öÓë²úÉúÊ½ÓÒ²¿ÊıÁ¿ÏàÍ¬µÄ½Úµã
+		//ä»æ ˆä¸­å¼¹å‡ºä¸äº§ç”Ÿå¼å³éƒ¨æ•°é‡ç›¸åŒçš„èŠ‚ç‚¹
 		vector<TreeNode*> children;
 		for (size_t i = 0; i < prod.right.size(); i++)
 			if (!nodeStack.empty()) {
@@ -797,38 +797,38 @@ void Parser::printSyntaxTree() const
 		nodeStack.push(node);
 	}
 
-	//µİ¹é´òÓ¡Óï·¨Ê÷µÄ¸¨Öúlambdaº¯Êı
+	//é€’å½’æ‰“å°è¯­æ³•æ ‘çš„è¾…åŠ©lambdaå‡½æ•°
 	auto printTreeNode = [](const TreeNode* node, string prefix, bool isLast, auto& self) -> void {
 		if (!node)
 			return;
 
 		cout << prefix;
 
-		//´òÓ¡Á¬½ÓÏß
-		cout << (isLast ? "©¸©¤©¤ " : "©À©¤©¤ ");
+		//æ‰“å°è¿æ¥çº¿
+		cout << (isLast ? "â””â”€â”€ " : "â”œâ”€â”€ ");
 
-		//´òÓ¡½ÚµãÄÚÈİ
+		//æ‰“å°èŠ‚ç‚¹å†…å®¹
 		cout << node->symbol.name;
 		if (!node->lexeme.empty())
 			cout << " (" << node->lexeme << ")";
 		cout << endl;
 
-		//Îª×Ó½Úµã×¼±¸Ç°×º
-		string newPrefix = prefix + (isLast ? "    " : "©¦   ");
+		//ä¸ºå­èŠ‚ç‚¹å‡†å¤‡å‰ç¼€
+		string newPrefix = prefix + (isLast ? "    " : "â”‚   ");
 
-		//µİ¹é´òÓ¡×Ó½Úµã
+		//é€’å½’æ‰“å°å­èŠ‚ç‚¹
 		for (size_t i = 0; i < node->children.size(); i++) {
 			bool lastChild = (i == node->children.size() - 1);
 			self(node->children[i], newPrefix, lastChild, self);
 		}
 		};
 
-	//´òÓ¡Õû¿ÃÊ÷
+	//æ‰“å°æ•´æ£µæ ‘
 	if (!nodeStack.empty()) {
 		TreeNode* rootNode = nodeStack.top();
 		printTreeNode(rootNode, "", true, printTreeNode);
 
-		//ÇåÀíÄÚ´æ
+		//æ¸…ç†å†…å­˜
 		while (!nodeStack.empty()) {
 			TreeNode* node = nodeStack.top();
 			nodeStack.pop();
@@ -836,7 +836,7 @@ void Parser::printSyntaxTree() const
 		}
 	}
 	else
-		cout << "ÎŞ·¨¹¹½¨Óï·¨Ê÷£¡\n";
+		cout << "æ— æ³•æ„å»ºè¯­æ³•æ ‘ï¼\n";
 
 	cout << "=======================================" << endl;
 }
@@ -874,7 +874,7 @@ void readString(ifstream& in, string& str)
 		str.clear();
 }
 
-// ĞòÁĞ»¯Symbol½á¹¹
+// åºåˆ—åŒ–Symbolç»“æ„
 void writeSymbol(ofstream& out, const Symbol& symbol)
 {
 	writeBasicType(out, symbol.isTerminal);
@@ -885,7 +885,7 @@ void writeSymbol(ofstream& out, const Symbol& symbol)
 	writeString(out, symbol.name);
 }
 
-// ·´ĞòÁĞ»¯Symbol½á¹¹
+// ååºåˆ—åŒ–Symbolç»“æ„
 Symbol readSymbol(ifstream& in)
 {
 	bool isTerminal;
@@ -897,7 +897,7 @@ Symbol readSymbol(ifstream& in)
 		string name;
 		readString(in, name);
 		Symbol symbol(terminalId);
-		symbol.name = name; // È·±£Ãû³ÆÕıÈ·ÉèÖÃ
+		symbol.name = name; // ç¡®ä¿åç§°æ­£ç¡®è®¾ç½®
 		return symbol;
 	}
 	else {
@@ -909,7 +909,7 @@ Symbol readSymbol(ifstream& in)
 	}
 }
 
-// ĞòÁĞ»¯Production½á¹¹
+// åºåˆ—åŒ–Productionç»“æ„
 void writeProduction(ofstream& out, const Production& prod)
 {
 	writeSymbol(out, prod.left);
@@ -921,7 +921,7 @@ void writeProduction(ofstream& out, const Production& prod)
 		writeSymbol(out, sym);
 }
 
-// ·´ĞòÁĞ»¯Production½á¹¹
+// ååºåˆ—åŒ–Productionç»“æ„
 Production readProduction(ifstream& in)
 {
 	Symbol left = readSymbol(in);
@@ -938,7 +938,7 @@ Production readProduction(ifstream& in)
 	return Production(left, right);
 }
 
-// ĞòÁĞ»¯LR1Item½á¹¹
+// åºåˆ—åŒ–LR1Itemç»“æ„
 void writeLR1Item(ofstream& out, const LR1Item& item)
 {
 	writeBasicType(out, item.productionIndex);
@@ -946,7 +946,7 @@ void writeLR1Item(ofstream& out, const LR1Item& item)
 	writeBasicType(out, item.lookahead);
 }
 
-// ·´ĞòÁĞ»¯LR1Item½á¹¹
+// ååºåˆ—åŒ–LR1Itemç»“æ„
 LR1Item readLR1Item(ifstream& in)
 {
 	int prodIndex, dotPos;
@@ -959,7 +959,7 @@ LR1Item readLR1Item(ifstream& in)
 	return LR1Item(prodIndex, dotPos, lookahead);
 }
 
-// ĞòÁĞ»¯LR1ItemSet½á¹¹
+// åºåˆ—åŒ–LR1ItemSetç»“æ„
 void writeLR1ItemSet(ofstream& out, const LR1ItemSet& itemset)
 {
 	size_t itemsSize = itemset.items.size();
@@ -969,7 +969,7 @@ void writeLR1ItemSet(ofstream& out, const LR1ItemSet& itemset)
 		writeLR1Item(out, item);
 }
 
-// ·´ĞòÁĞ»¯LR1ItemSet½á¹¹
+// ååºåˆ—åŒ–LR1ItemSetç»“æ„
 LR1ItemSet readLR1ItemSet(ifstream& in)
 {
 	size_t itemsSize;
@@ -982,14 +982,14 @@ LR1ItemSet readLR1ItemSet(ifstream& in)
 	return itemset;
 }
 
-// ĞòÁĞ»¯ActionTableEntry½á¹¹
+// åºåˆ—åŒ–ActionTableEntryç»“æ„
 void writeActionTableEntry(ofstream& out, const ActionTableEntry& entry)
 {
 	writeBasicType(out, entry.act);
 	writeBasicType(out, entry.num);
 }
 
-// ·´ĞòÁĞ»¯ActionTableEntry½á¹¹
+// ååºåˆ—åŒ–ActionTableEntryç»“æ„
 ActionTableEntry readActionTableEntry(ifstream& in)
 {
 	ActionTableEntry entry;
@@ -998,7 +998,7 @@ ActionTableEntry readActionTableEntry(ifstream& in)
 	return entry;
 }
 
-// ĞòÁĞ»¯ParseError½á¹¹
+// åºåˆ—åŒ–ParseErrorç»“æ„
 void writeParseError(ofstream& out, const ParseError& error)
 {
 	writeBasicType(out, error.line);
@@ -1007,7 +1007,7 @@ void writeParseError(ofstream& out, const ParseError& error)
 	writeString(out, error.message);
 }
 
-// ·´ĞòÁĞ»¯ParseError½á¹¹
+// ååºåˆ—åŒ–ParseErrorç»“æ„
 ParseError readParseError(ifstream& in)
 {
 	ParseError error;
@@ -1018,7 +1018,7 @@ ParseError readParseError(ifstream& in)
 	return error;
 }
 
-// ĞòÁĞ»¯ TokenType ¼¯ºÏ
+// åºåˆ—åŒ– TokenType é›†åˆ
 void writeTokenTypeSet(ofstream& out, const set<TokenType>& tokenSet)
 {
 	size_t setSize = tokenSet.size();
@@ -1028,7 +1028,7 @@ void writeTokenTypeSet(ofstream& out, const set<TokenType>& tokenSet)
 		writeBasicType(out, token);
 }
 
-// ·´ĞòÁĞ»¯ TokenType ¼¯ºÏ
+// ååºåˆ—åŒ– TokenType é›†åˆ
 set<TokenType> readTokenTypeSet(ifstream& in)
 {
 	size_t setSize;
@@ -1048,18 +1048,18 @@ void Parser::saveToFile(const string& filepath) const
 {
 	ofstream out(filepath, ios::binary);
 	if (!out.is_open()) {
-		throw runtime_error("ÎŞ·¨´ò¿ªÎÄ¼ş½øĞĞĞ´Èë: " + filepath);
+		throw runtime_error("æ— æ³•æ‰“å¼€æ–‡ä»¶è¿›è¡Œå†™å…¥: " + filepath);
 	}
 
 	try {
-		// 1. ±£´æ productions
+		// 1. ä¿å­˜ productions
 		size_t prodSize = productions.size();
 		writeBasicType(out, prodSize);
 		for (const auto& prod : productions) {
 			writeProduction(out, prod);
 		}
 
-		// 2. ±£´æ nonTerminals
+		// 2. ä¿å­˜ nonTerminals
 		size_t ntSize = nonTerminals.size();
 		writeBasicType(out, ntSize);
 		for (const auto& [name, id] : nonTerminals) {
@@ -1067,21 +1067,21 @@ void Parser::saveToFile(const string& filepath) const
 			writeBasicType(out, id);
 		}
 
-		// 3. ±£´æ firsts
+		// 3. ä¿å­˜ firsts
 		size_t firstsSize = firsts.size();
 		writeBasicType(out, firstsSize);
 		for (const auto& tokenSet : firsts) {
 			writeTokenTypeSet(out, tokenSet);
 		}
 
-		// 4. ±£´æ Itemsets
+		// 4. ä¿å­˜ Itemsets
 		size_t itemsetsSize = Itemsets.size();
 		writeBasicType(out, itemsetsSize);
 		for (const auto& itemset : Itemsets) {
 			writeLR1ItemSet(out, itemset);
 		}
 
-		// 5. ±£´æ actionTable
+		// 5. ä¿å­˜ actionTable
 		size_t actionTableSize = actionTable.size();
 		writeBasicType(out, actionTableSize);
 		for (const auto& row : actionTable) {
@@ -1092,7 +1092,7 @@ void Parser::saveToFile(const string& filepath) const
 			}
 		}
 
-		// 6. ±£´æ gotoTable
+		// 6. ä¿å­˜ gotoTable
 		size_t gotoTableSize = gotoTable.size();
 		writeBasicType(out, gotoTableSize);
 		for (const auto& row : gotoTable) {
@@ -1103,14 +1103,14 @@ void Parser::saveToFile(const string& filepath) const
 			}
 		}
 
-		// 7. ±£´æ reduceProductionLists
+		// 7. ä¿å­˜ reduceProductionLists
 		size_t reduceListSize = reduceProductionLists.size();
 		writeBasicType(out, reduceListSize);
 		for (const auto& prod : reduceProductionLists) {
 			writeProduction(out, prod);
 		}
 
-		// 8. ±£´æ parseErrors
+		// 8. ä¿å­˜ parseErrors
 		size_t errorsSize = parseErrors.size();
 		writeBasicType(out, errorsSize);
 		for (const auto& error : parseErrors) {
@@ -1121,7 +1121,7 @@ void Parser::saveToFile(const string& filepath) const
 	}
 	catch (const exception& e) {
 		out.close();
-		throw runtime_error(string("ĞòÁĞ»¯Parser¶ÔÏóÊ§°Ü: ") + e.what());
+		throw runtime_error(string("åºåˆ—åŒ–Parserå¯¹è±¡å¤±è´¥: ") + e.what());
 	}
 }
 
@@ -1130,11 +1130,11 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 	if (fromFile) {
 		ifstream in(filepath, ios::binary);
 		if (!in.is_open()) {
-			throw runtime_error("ÎŞ·¨´ò¿ªÎÄ¼ş½øĞĞ¶ÁÈ¡: " + filepath);
+			throw runtime_error("æ— æ³•æ‰“å¼€æ–‡ä»¶è¿›è¡Œè¯»å–: " + filepath);
 		}
 
 		try {
-			// 1. ¶ÁÈ¡ productions
+			// 1. è¯»å– productions
 			size_t prodSize;
 			readBasicType(in, prodSize);
 			productions.clear();
@@ -1143,7 +1143,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				productions.push_back(readProduction(in));
 			}
 
-			// 2. ¶ÁÈ¡ nonTerminals
+			// 2. è¯»å– nonTerminals
 			size_t ntSize;
 			readBasicType(in, ntSize);
 			nonTerminals.clear();
@@ -1155,7 +1155,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				nonTerminals[name] = id;
 			}
 
-			// 3. ¶ÁÈ¡ firsts
+			// 3. è¯»å– firsts
 			size_t firstsSize;
 			readBasicType(in, firstsSize);
 			firsts.clear();
@@ -1164,7 +1164,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				firsts[i] = readTokenTypeSet(in);
 			}
 
-			// 4. ¶ÁÈ¡ Itemsets
+			// 4. è¯»å– Itemsets
 			size_t itemsetsSize;
 			readBasicType(in, itemsetsSize);
 			Itemsets.clear();
@@ -1173,7 +1173,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				Itemsets.push_back(readLR1ItemSet(in));
 			}
 
-			// 5. ¶ÁÈ¡ actionTable
+			// 5. è¯»å– actionTable
 			size_t actionTableSize;
 			readBasicType(in, actionTableSize);
 			actionTable.clear();
@@ -1187,7 +1187,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				}
 			}
 
-			// 6. ¶ÁÈ¡ gotoTable
+			// 6. è¯»å– gotoTable
 			size_t gotoTableSize;
 			readBasicType(in, gotoTableSize);
 			gotoTable.clear();
@@ -1201,7 +1201,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				}
 			}
 
-			// 7. ¶ÁÈ¡ reduceProductionLists
+			// 7. è¯»å– reduceProductionLists
 			size_t reduceListSize;
 			readBasicType(in, reduceListSize);
 			reduceProductionLists.clear();
@@ -1210,7 +1210,7 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 				reduceProductionLists.push_back(readProduction(in));
 			}
 
-			// 8. ¶ÁÈ¡ parseErrors
+			// 8. è¯»å– parseErrors
 			size_t errorsSize;
 			readBasicType(in, errorsSize);
 			parseErrors.clear();
@@ -1223,11 +1223,11 @@ Parser::Parser(Scanner& lexer, const string& filepath, bool fromFile) : lexer(le
 		}
 		catch (const exception& e) {
 			in.close();
-			throw runtime_error(string("·´ĞòÁĞ»¯Parser¶ÔÏóÊ§°Ü: ") + e.what());
+			throw runtime_error(string("ååºåˆ—åŒ–Parserå¯¹è±¡å¤±è´¥: ") + e.what());
 		}
 	}
 	else {
-		// Ô­À´µÄ¼ÓÔØÂß¼­
+		// åŸæ¥çš„åŠ è½½é€»è¾‘
 		LoadGrammar(filepath);
 		augmentProduction();
 		ComputeFirsts();

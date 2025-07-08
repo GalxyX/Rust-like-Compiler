@@ -13,18 +13,18 @@ json TokensJson(const vector<Token>& tokens)
 	for (const auto& token : tokens) {
 		json token_obj;
 		token_obj["type"] = TokenTypeToString(token.type);
-		// ¸ù¾İtokenÀàĞÍÑ¡ÔñÕıÈ·µÄÖµÀàĞÍ
+		// æ ¹æ®tokenç±»å‹é€‰æ‹©æ­£ç¡®çš„å€¼ç±»å‹
 		if (token.type == Identifier)
 			token_obj["value"] = get<string>(token.value);
 		else if (token.type == i32_)
 			token_obj["value"] = get<int>(token.value);
 		else if (token.type == char_)
-			token_obj["value"] = string(1, get<char>(token.value)); // ×ª»»charÎªstring
+			token_obj["value"] = string(1, get<char>(token.value)); // è½¬æ¢charä¸ºstring
 		else if (token.type == string_)
 			token_obj["value"] = get<string>(token.value);
 		else
 			token_obj["value"] = get<int>(token.value);
-		// Ìí¼ÓÎ»ÖÃĞÅÏ¢
+		// æ·»åŠ ä½ç½®ä¿¡æ¯
 		token_obj["line"] = token.line;
 		token_obj["column"] = token.column;
 		token_obj["length"] = token.length;
@@ -36,13 +36,13 @@ json FirstsJson(const Parser& parser)
 {
 	const vector<set<enum TokenType>>& firsts = parser.GetFirsts();
 	const unordered_map<string, unsigned int>& nonTerminals = parser.GetNonTerminals();
-	json firsts_json = json::array();//[{×Ö·û : FIRST()}, {×Ö·û : FIRST()}, ...]
+	json firsts_json = json::array();//[{å­—ç¬¦ : FIRST()}, {å­—ç¬¦ : FIRST()}, ...]
 	for (const auto& map : nonTerminals) {
-		json first_set = json::array();//¸Ã×Ö·ûµÄËùÓĞfirstÔªËØµÄÊı×é
+		json first_set = json::array();//è¯¥å­—ç¬¦çš„æ‰€æœ‰firstå…ƒç´ çš„æ•°ç»„
 		for (const auto& terminal : firsts[map.second]) {
 			first_set.push_back(TokenTypeToString(terminal));
 		}
-		firsts_json[map.first] = first_set;//{×Ö·û : FIRST()}
+		firsts_json[map.first] = first_set;//{å­—ç¬¦ : FIRST()}
 	}
 	return firsts_json;
 }
@@ -55,29 +55,29 @@ json LR1ItemsJson(const Parser& parser)
 		json itemset_json = json::object();
 		itemset_json["id"] = "I" + to_string(i);
 
-		json items = json::array();//[µ¥¸öLR1ÏîÄ¿µÄÃ¿¸ö±í´ïÊ½]
+		json items = json::array();//[å•ä¸ªLR1é¡¹ç›®çš„æ¯ä¸ªè¡¨è¾¾å¼]
 		for (const auto& item : itemsets[i].items) {
 			json item_json = json::object();//{ "left": , "right": , ...}
-			const Production& prod = productions[item.productionIndex];//»ñÈ¡²úÉúÊ½
-			item_json["left"] = prod.left.name;//²úÉúÊ½×ó²¿ left : T
-			json right_symbols = json::array();//²úÉúÊ½ÓÒ²¿[t1, t2, ...]
+			const Production& prod = productions[item.productionIndex];//è·å–äº§ç”Ÿå¼
+			item_json["left"] = prod.left.name;//äº§ç”Ÿå¼å·¦éƒ¨ left : T
+			json right_symbols = json::array();//äº§ç”Ÿå¼å³éƒ¨[t1, t2, ...]
 			for (size_t j = 0; j < prod.right.size(); j++) {
 				right_symbols.push_back(prod.right[j].name);
 			}
-			item_json["right"] = right_symbols;//²úÉúÊ½ÓÒ²¿ right : [t1, t2, ...]
-			item_json["dotPosition"] = item.dotPosition;//µãÎ»ÖÃ dotPosition : x
-			item_json["lookahead"] = TokenTypeToString(item.lookahead);//Ç°Õ°·ûºÅ lookahead, T
-			// ¹¹Ôì²úÉúÊ½×Ö·û´®±íÊ¾
+			item_json["right"] = right_symbols;//äº§ç”Ÿå¼å³éƒ¨ right : [t1, t2, ...]
+			item_json["dotPosition"] = item.dotPosition;//ç‚¹ä½ç½® dotPosition : x
+			item_json["lookahead"] = TokenTypeToString(item.lookahead);//å‰ç»ç¬¦å· lookahead, T
+			// æ„é€ äº§ç”Ÿå¼å­—ç¬¦ä¸²è¡¨ç¤º
 			string production_str = prod.left.name + " -> ";
 			for (size_t j = 0; j < prod.right.size(); j++) {
 				if (j == item.dotPosition)
-					production_str += "¡¤ ";
+					production_str += "Â· ";
 				production_str += prod.right[j].name + " ";
 			}
 			if (item.dotPosition == prod.right.size())
-				production_str += "¡¤";
+				production_str += "Â·";
 			production_str += ", " + string(TokenTypeToString(item.lookahead));
-			item_json["display"] = production_str;//display : T->T¡¤T, T
+			item_json["display"] = production_str;//display : T->TÂ·T, T
 			items.push_back(item_json);
 		}
 		itemset_json["items"] = items;
@@ -89,18 +89,18 @@ json ActionTableJson(const Parser& parser)
 {
 	const auto& actionTable = parser.GetActionTable();
 	json action_table_json = json::array();
-	for (size_t i = 0; i < actionTable.size(); i++) {// ±éÀúËùÓĞ×´Ì¬
+	for (size_t i = 0; i < actionTable.size(); i++) {// éå†æ‰€æœ‰çŠ¶æ€
 		json row = json::object();
 		row["state"] = "I" + to_string(i);
 
 		json actions = json::object();
-		// ±éÀúËùÓĞÖÕ½á·û£¨°üÀ¨¿ÕÖÕ½á·û£©
+		// éå†æ‰€æœ‰ç»ˆç»“ç¬¦ï¼ˆåŒ…æ‹¬ç©ºç»ˆç»“ç¬¦ï¼‰
 		for (int j = 1; j <= int(TokenType::End); j++) {
 			string token_name = TokenTypeToString(TokenType(j));
 			const auto& entry = actionTable[i][j];
 
-			// ¸ù¾İ¶¯×÷ÀàĞÍÉú³É×Ö·û´®±íÊ¾
-			string action_str = "-"; // Ä¬ÈÏÎª¿Õ
+			// æ ¹æ®åŠ¨ä½œç±»å‹ç”Ÿæˆå­—ç¬¦ä¸²è¡¨ç¤º
+			string action_str = "-"; // é»˜è®¤ä¸ºç©º
 			switch (entry.act) {
 			case Action::shift:
 				action_str = "s" + to_string(entry.num);
@@ -112,7 +112,7 @@ json ActionTableJson(const Parser& parser)
 				action_str = "acc";
 				break;
 			default:
-				// ±£³ÖÄ¬ÈÏÖµ"-"
+				// ä¿æŒé»˜è®¤å€¼"-"
 				break;
 			}
 			actions[token_name] = action_str;
@@ -128,18 +128,18 @@ json GotoTableJson(const Parser& parser)
 	const auto& gotoTable = parser.GetGotoTable();
 	const unordered_map<string, unsigned int>& nonTerminals = parser.GetNonTerminals();
 	json goto_table_json = json::array();
-	for (size_t i = 0; i < gotoTable.size(); i++) {//±éÀúËùÓĞ×´Ì¬
+	for (size_t i = 0; i < gotoTable.size(); i++) {//éå†æ‰€æœ‰çŠ¶æ€
 		json row = json::object();
 		row["state"] = "I" + to_string(i);
 
 		json goto_entries = json::object();
-		// ±éÀúËùÓĞ·ÇÖÕ½á·û
+		// éå†æ‰€æœ‰éç»ˆç»“ç¬¦
 		size_t map_idx = 0;
 		for (const auto& map : nonTerminals) {
-			// ·ÇÖÕ½á·ûÃû³ÆºÍ¶ÔÓ¦µÄÄ¿±ê×´Ì¬
+			// éç»ˆç»“ç¬¦åç§°å’Œå¯¹åº”çš„ç›®æ ‡çŠ¶æ€
 			string nt_name = map.first;
 			int target = gotoTable[i][map_idx];
-			// ½«Ä¿±ê×´Ì¬×ª»»Îª×Ö·û´®£¨0»ò¿Õ±íÊ¾Îª"-"£©
+			// å°†ç›®æ ‡çŠ¶æ€è½¬æ¢ä¸ºå­—ç¬¦ä¸²ï¼ˆ0æˆ–ç©ºè¡¨ç¤ºä¸º"-"ï¼‰
 			goto_entries[nt_name] = (target == -1) ? "-" : to_string(target);
 			map_idx++;
 		}
@@ -163,7 +163,7 @@ json ReduceProductionsJson(const Parser& parser)
 		}
 		prod_json["right"] = right;
 
-		// ¹¹Ôì²úÉúÊ½µÄ×Ö·û´®±íÊ¾
+		// æ„é€ äº§ç”Ÿå¼çš„å­—ç¬¦ä¸²è¡¨ç¤º
 		string prod_str = prod.left.name + " -> ";
 		for (const auto& sym : prod.right) {
 			prod_str += sym.name + " ";
@@ -189,7 +189,7 @@ json ParseErrorsJson(const Parser& parser)
 json QuadruplesJson(const Parser &parser)
 {
 	json quadruples = json::array();
-    int address = 100; // ÆğÊ¼µØÖ·£¬ÓëSTART_STMT_ADDRÒ»ÖÂ
+    int address = 100; // èµ·å§‹åœ°å€ï¼Œä¸START_STMT_ADDRä¸€è‡´
     for (const auto& q : parser.GetqList()) {
         json obj = json::object();
 		obj["address"] = address;
@@ -215,43 +215,43 @@ json SemanticErrorsJson(const Parser &parser)
 }
 
 int main() {
-	//´Ó±ê×¼ÊäÈë¶ÁÈ¡Õû¸ö³ÌĞò£¬ÒÔEOF½áÎ²
+	//ä»æ ‡å‡†è¾“å…¥è¯»å–æ•´ä¸ªç¨‹åºï¼Œä»¥EOFç»“å°¾
 	string program, line;
 	while (getline(cin, line))
 		program += line + "\n";
-	//´´½¨InputBuffer¶ÔÏó
+	//åˆ›å»ºInputBufferå¯¹è±¡
 	InputBuffer input(program);
 	input.filter_comments();
-	//´Ê·¨·ÖÎö
+	//è¯æ³•åˆ†æ
 	Scanner scanner(input);
 	scanner.LexicalAnalysis();
 	vector<Token> tokens = scanner.GetTokens();
-	//Êä³ö´Ê·¨·ÖÎö½á¹û
+	//è¾“å‡ºè¯æ³•åˆ†æç»“æœ
 	json result;
 	result["tokens"] = TokensJson(tokens);
-	//Óï·¨·ÖÎö
+	//è¯­æ³•åˆ†æ
 	InputBuffer syntaxInput(program);
 	syntaxInput.filter_comments();
 	Scanner parserScanner(syntaxInput);
-	string grammar = "rust/grammar.txt"; // ¼ÙÉèÓï·¨ÎÄ¼şÂ·¾¶
+	string grammar = "rust/grammar.txt"; // å‡è®¾è¯­æ³•æ–‡ä»¶è·¯å¾„
 	Parser parser(parserScanner, grammar);
 	//Parser parser(parserScanner, "rust/parser.galp", true);
 	parser.SyntaxAnalysis();
-	//Êä³öFIRST¼¯ºÏ
+	//è¾“å‡ºFIRSTé›†åˆ
 	result["firsts"] = FirstsJson(parser);
-	//LR1ÏîÄ¿¼¯
+	//LR1é¡¹ç›®é›†
 	result["LR1items"] = LR1ItemsJson(parser);
-	// »ñÈ¡Action±í²¢×ª»»ÎªJSON
+	// è·å–Actionè¡¨å¹¶è½¬æ¢ä¸ºJSON
 	result["actiontable"] = ActionTableJson(parser);
-	// »ñÈ¡Goto±í
+	// è·å–Gotoè¡¨
 	result["gototable"] = GotoTableJson(parser);
-	// »ñÈ¡¹æÔ¼²úÉúÊ½ĞòÁĞ
+	// è·å–è§„çº¦äº§ç”Ÿå¼åºåˆ—
 	result["reduceProductions"] = ReduceProductionsJson(parser);
-	// Êä³öÓï·¨·ÖÎö´íÎó
+	// è¾“å‡ºè¯­æ³•åˆ†æé”™è¯¯
 	result["parseErrors"] = ParseErrorsJson(parser);
-	// Êä³öËÄÔªÊ½
+	// è¾“å‡ºå››å…ƒå¼
 	result["quadruples"] = QuadruplesJson(parser);
-	// Êä³öÓïÒå´íÎó
+	// è¾“å‡ºè¯­ä¹‰é”™è¯¯
 	result["semanticErrors"] = SemanticErrorsJson(parser);
 
 	cout << result.dump(2) << endl;
@@ -279,11 +279,11 @@ int main(int argc, char** argv)
 			vector<Token> tokens = newscanner.GetTokens();
 			for (unsigned int i = 0; i < tokens.size(); ++i)
 				if (tokens[i].type == Identifier)
-					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")£º"/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/ << endl;
+					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")ï¼š"/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/ << endl;
 				else
 					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')' << endl;
 		}
-	//´Ê·¨·ÖÎö
+	//è¯æ³•åˆ†æ
 	inputb = new(nothrow)InputBuffer(path);
 	inputb->filter_comments();
 
@@ -291,11 +291,11 @@ int main(int argc, char** argv)
 	newscanner.LexicalAnalysis();
 	//vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
 	vector<Token> tokens = newscanner.GetTokens();
-	//// ÔÚ´òÓ¡tokensĞÅÏ¢Ê±Ìí¼ÓÎ»ÖÃĞÅĞÅÏ¢
+	//// åœ¨æ‰“å°tokensä¿¡æ¯æ—¶æ·»åŠ ä½ç½®ä¿¡ä¿¡æ¯
 	//for (unsigned int i = 0; i < tokens.size(); ++i) {
-	//	cout << " [ĞĞ:" << tokens[i].line << " ÁĞ:" << tokens[i].column << " ³¤¶È:" << tokens[i].length << "]    ";
+	//	cout << " [è¡Œ:" << tokens[i].line << " åˆ—:" << tokens[i].column << " é•¿åº¦:" << tokens[i].length << "]    ";
 	//	if (tokens[i].type == Identifier)
-	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")£º"/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/;
+	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")ï¼š"/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/;
 	//	else if (tokens[i].type == string_)
 	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ')';
 	//	else if (tokens[i].type == char_)
@@ -305,7 +305,7 @@ int main(int argc, char** argv)
 	//	cout << endl;
 	//}
 	delete inputb;
-	//Óï·¨·ÖÎö
+	//è¯­æ³•åˆ†æ
 	InputBuffer* inputp = new(nothrow)InputBuffer(path);
 	inputp->filter_comments();
 	Scanner pscanner(*inputp);
