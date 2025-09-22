@@ -121,7 +121,7 @@ void InputBuffer::filter_comments()
 	default:
 		break;
 	}
-
+	line_breaks.push_back(clean_code.size() - 1);
 	//cout << clean_code << endl;
 }
 
@@ -242,10 +242,21 @@ void Scanner::GetBC()
 	return;
 }
 
+void Scanner::Retract()
+{
+	ch = input.Retract();//注意要更新当前读入字符，否则ch仍保留在下一字符处
+	return;
+}
+
 void Scanner::Concat()
 {
 	strToken += ch;
 	return;
+}
+
+void Scanner::Clear()
+{
+	strToken.clear();
 }
 
 bool Scanner::IsLetter() const
@@ -272,17 +283,6 @@ TokenType Scanner::Reserve() const
 		if (ReservedWordsTable[reserveNum] == strToken)
 			return TokenType(reserveNum + 1);
 	return None;
-}
-
-void Scanner::Retract()
-{
-	ch = input.Retract();//注意要更新当前读入字符，否则ch仍保留在下一字符处
-	return;
-}
-
-void Scanner::Clear()
-{
-	strToken.clear();
 }
 
 Token Scanner::scan()
@@ -605,7 +605,7 @@ void Scanner::ProcError(const string errorMessage, int line, int column) const
 	if (strToken.empty())
 		DEBUG_CERR << errorMessage << "（" << line << "，" << column << "）ASCII" << int(ch) << endl;
 	else
-		DEBUG_CERR << errorMessage << line << "，" << column - strToken.size() << "）" << strToken << endl;
+		DEBUG_CERR << errorMessage << "（" << line << "，" << column - strToken.size() << "）" << strToken << endl;
 	return;
 }
 

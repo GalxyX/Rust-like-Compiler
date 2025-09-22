@@ -184,6 +184,7 @@ class ElseStmt : public Stmt {
 public:
 	int firstquad;									//<else部分>第一条语句地址，没有为-1
 	ElseStmt(size_t line, size_t column, bool returned, int firstquad, const std::vector<size_t>& nextlist = std::vector<size_t>());
+	ElseStmt(size_t line, size_t column, bool returned, int firstquad, const std::vector<size_t>& nextlist, const std::vector<size_t>& breaklist, const std::vector<size_t>& continuelist);//所有list均需构造时使用该构造函数，构造nextlist；breaklist；continuelist
 };
 
 //<可迭代结构>
@@ -193,7 +194,7 @@ public:
 	ExprNode right;									//当<可迭代结构>为<表达式> '..' <表达式>时有效，可迭代结构的第二个<表达式>（开区间）
 	std::string arrayName;							//当<可迭代结构>为<元素>时有效，可迭代结构的元素名
 	IterableStructure(size_t line, size_t column, ExprNode left, ExprNode right);	//当<可迭代结构>为<表达式> '..' <表达式>时使用该构造函数
-	IterableStructure(size_t line, size_t column, std::string arrayName);			//当<可迭代结构>为<元素>时使用该构造函数
+	//IterableStructure(size_t line, size_t column, std::string arrayName);			//当<可迭代结构>为<元素>时使用该构造函数
 };
 
 //<for变量迭代结构>

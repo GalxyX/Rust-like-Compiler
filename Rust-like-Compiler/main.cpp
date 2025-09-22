@@ -36,13 +36,15 @@ json FirstsJson(const Parser& parser)
 {
 	const vector<set<enum TokenType>>& firsts = parser.GetFirsts();
 	const unordered_map<string, unsigned int>& nonTerminals = parser.GetNonTerminals();
-	json firsts_json = json::array();//[{字符 : FIRST()}, {字符 : FIRST()}, ...]
-	for (const auto& map : nonTerminals) {
-		json first_set = json::array();//该字符的所有first元素的数组
-		for (const auto& terminal : firsts[map.second]) {
+	json firsts_json = json::object();
+	vector<pair<string, unsigned>> nts(nonTerminals.begin(), nonTerminals.end());
+	sort(nts.begin(), nts.end(), [](auto& a, auto& b) { return a.first < b.first; });
+	for (const auto& kv : nts) {
+		json first_set = json::array();
+		for (const auto& terminal : firsts[kv.second]) {
 			first_set.push_back(TokenTypeToString(terminal));
 		}
-		firsts_json[map.first] = first_set;//{字符 : FIRST()}
+		firsts_json[kv.first] = first_set;
 	}
 	return firsts_json;
 }
@@ -186,32 +188,33 @@ json ParseErrorsJson(const Parser& parser)
 	}
 	return errors;
 }
-json QuadruplesJson(const Parser &parser)
+json QuadruplesJson(const Parser& parser)
 {
 	json quadruples = json::array();
-    int address = 100; // 起始地址，与START_STMT_ADDR一致
-    for (const auto& q : parser.GetqList()) {
-        json obj = json::object();
+	int address = 100;
+	for (const auto& q : parser.GetqList()) {
+		json obj = json::object();
 		obj["address"] = address;
 		obj["op"] = q.op;
 		obj["arg1"] = q.arg1;
 		obj["arg2"] = q.arg2;
 		obj["result"] = q.result;
 		quadruples.push_back(obj);
-    }
-    return quadruples;
+		++address; // 递增
+	}
+	return quadruples;
 }
-json SemanticErrorsJson(const Parser &parser)
+json SemanticErrorsJson(const Parser& parser)
 {
 	json errors = json::array();
-    for (const auto& error : parser.GetSemanticErrors()) {
-        json obj;
+	for (const auto& error : parser.GetSemanticErrors()) {
+		json obj;
 		obj["line"] = error.line;
 		obj["column"] = error.column;
 		obj["message"] = error.message;
 		errors.push_back(obj);
-    }
-    return errors;
+	}
+	return errors;
 }
 
 int main() {

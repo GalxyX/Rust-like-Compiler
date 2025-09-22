@@ -299,6 +299,10 @@ ElseStmt::ElseStmt(size_t line, size_t column, bool returned, int firstquad, con
 {
 }
 
+ElseStmt::ElseStmt(size_t line, size_t column, bool returned, int firstquad, const std::vector<size_t>& nextlist, const std::vector<size_t>& breaklist, const std::vector<size_t>& continuelist) : Stmt(line, column, returned, nextlist, breaklist, continuelist), firstquad(firstquad)
+{
+}
+
 IterableStructure::IterableStructure(size_t line, size_t column, ExprNode left, ExprNode right) : ASTNode(line, column), left(left), right(right)
 {
 }
@@ -516,7 +520,7 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		nodeStack.push(move(astnode));
 
 		enterproc(proptr.top(), { idnode1->name, ValueType::none, paranode3->paratype, nextstat });
-		ProcedureTable out = *proptr.top();
+		ProcedureTable& out = *proptr.top();
 		proptr.push(&out[out.size() - 1].subProcedureTable);
 	}
 	//1.1_6 基础程序----------<形参列表>-> 空
@@ -1140,10 +1144,10 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		unique_ptr<Stmt> stmtnode;
 		if (elsestmtnode5->firstquad != -1) {
 			backpatch(bnode2->falselist, elsestmtnode5->firstquad);
-			stmtnode = make_unique<Stmt>(astnode0->line, astnode0->column, stmtnode4->returned && elsestmtnode5->returned, merge(stmtnode4->nextlist, elsestmtnode5->nextlist));
+			stmtnode = make_unique<Stmt>(astnode0->line, astnode0->column, stmtnode4->returned && elsestmtnode5->returned, merge(stmtnode4->nextlist, elsestmtnode5->nextlist), merge(stmtnode4->breaklist, elsestmtnode5->breaklist), merge(stmtnode4->continuelist, elsestmtnode5->continuelist));
 		}
 		else
-			stmtnode = make_unique<Stmt>(astnode0->line, astnode0->column, stmtnode4->returned && elsestmtnode5->returned, merge(stmtnode4->nextlist, bnode2->falselist));
+			stmtnode = make_unique<Stmt>(astnode0->line, astnode0->column, stmtnode4->returned && elsestmtnode5->returned, merge(stmtnode4->nextlist, bnode2->falselist), stmtnode4->breaklist, stmtnode4->continuelist);
 		nodeStack.push(move(stmtnode));
 	}
 	//4.1_3 选择结构（前置规则1.2、3.1）----------<else部分> -> 空 | <P> else <Q> <语句块>
@@ -1160,7 +1164,7 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		nodeStack.pop();
 		unique_ptr<P> pnode = unique_ptr<P>(static_cast<P*>(nodeStack.top().release()));
 		nodeStack.pop();
-		unique_ptr<ElseStmt> elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned, qnode->quad, merge(pnode->nextlist, stmtnode->nextlist));
+		unique_ptr<ElseStmt> elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned, qnode->quad, merge(pnode->nextlist, stmtnode->nextlist), stmtnode->breaklist, stmtnode->continuelist);
 		nodeStack.push(move(elsestmtnode));
 	}
 	//4.2 增加else if（前置规则4.1）----------<else部分> -> <P> else if <Q> <表达式> <B> <Q> <语句块> <else部分>
@@ -1187,10 +1191,10 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		unique_ptr<Stmt> elsestmtnode;
 		if (elsestmtnode7->firstquad != -1) {
 			backpatch(bnode->falselist, elsestmtnode7->firstquad);
-			elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned && elsestmtnode7->returned, qnode3->quad, merge(merge(stmtnode->nextlist, pnode->nextlist), elsestmtnode7->nextlist));
+			elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned && elsestmtnode7->returned, qnode3->quad, merge(merge(stmtnode->nextlist, pnode->nextlist), elsestmtnode7->nextlist), merge(stmtnode->breaklist, elsestmtnode7->breaklist), merge(stmtnode->continuelist, elsestmtnode7->continuelist));
 		}
 		else
-			elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned && elsestmtnode7->returned, qnode3->quad, merge(merge(stmtnode->nextlist, pnode->nextlist), bnode->falselist));
+			elsestmtnode = make_unique<ElseStmt>(astnode->line, astnode->column, stmtnode->returned && elsestmtnode7->returned, qnode3->quad, merge(merge(stmtnode->nextlist, pnode->nextlist), bnode->falselist), stmtnode->breaklist, stmtnode->continuelist);
 		nodeStack.push(move(elsestmtnode));
 	}
 	//4.0 选择结构（前置规则1.2、3.1）----------<B> -> 空 | <Q> -> 空 | <P> -> 空
