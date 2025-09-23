@@ -560,7 +560,7 @@ void Parser::SyntaxAnalysis()
 			semanticer.analyze(productions[action.num]);
 		}
 		else if (action.act == Action::accept) {
-			semanticer.addJumpToMain();
+			//semanticer.addJumpToMain();
 			break;//语法分析完成
 		}
 		else if (action.act == Action::error) {
@@ -1243,4 +1243,9 @@ const std::vector<Quadruple>& Parser::GetqList() const
 const std::vector<ParseError>& Parser::GetSemanticErrors() const
 {
 	return semanticer.GetSemanticErrors();
+}
+
+void Parser::resultToFile() const
+{
+	semanticer.resultToFile();
 }

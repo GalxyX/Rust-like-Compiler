@@ -108,4 +108,5 @@ public:
 	//语义分析
 	const std::vector<Quadruple>& GetqList() const;									//返回语义分析结果，{所有四元式}qList
 	const std::vector<ParseError>& GetSemanticErrors() const;						//返回{语义分析错误}semanticErrors
+	void resultToFile() const;
 };

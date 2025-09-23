@@ -1,5 +1,6 @@
 #include "SemanticAnalyzer.h"
 #include "Parser.h"
+#include <fstream>
 using namespace std;
 
 SymbolTable::SymbolTable(SymbolTable* prevTable) : prev(prevTable), width(0)
@@ -40,6 +41,8 @@ static size_t getValueTypeWidth(ValueType type) {
 	case _procedure:
 		return sizeof(void*);   // 函数指针大小，通常为指针大小
 	case undefined:
+	case constRef_i32:
+	case mutRef_i32:
 	default:
 		return 0;       // 未定义类型或错误情况
 	}
@@ -55,7 +58,7 @@ bool SymbolTable::isExist(string symbolName)
 
 void SymbolTable::put(const SymbolTableEntry& newSymbol)
 {
-	table.push_back(SymbolTableEntry{ newSymbol.ID, newSymbol.kind, newSymbol.type, newSymbol.isNormal, newSymbol.isAssigned/*, newSymbol.value*/, width });
+	table.push_back(SymbolTableEntry{ newSymbol.ID, newSymbol.kind, newSymbol.type, newSymbol.isNormal, newSymbol.isAssigned/*, newSymbol.value*/, width, newSymbol.refID, newSymbol.refKind });
 	width += getValueTypeWidth(newSymbol.type);
 }
 
@@ -82,6 +85,8 @@ bool SymbolTable::update(const SymbolTableEntry& newSymbol)
 				(*rit).isAssigned = newSymbol.isAssigned;
 				//(*rit).value = newSymbol.value;
 				(*rit).addr = width;
+				(*rit).refID = newSymbol.refID;
+				(*rit).refKind = newSymbol.refKind;
 				width += getValueTypeWidth(newSymbol.type);
 				return true;
 			}
@@ -339,7 +344,7 @@ std::vector<size_t> SemanticAnalyzer::merge(std::vector<size_t> list1, std::vect
 void SemanticAnalyzer::backpatch(std::vector<size_t> list, size_t quad)
 {
 	for (const size_t& i : list)
-		qList[i - START_STMT_ADDR - 1].result = to_string(quad);
+		qList[i - START_STMT_ADDR/* - 1*/].result = to_string(quad);
 }
 
 void SemanticAnalyzer::mkleaf(size_t line, size_t column, std::string id)
@@ -371,7 +376,7 @@ void SemanticAnalyzer::AddSemanticError(int line, int column, const std::string&
 	semanticErrors.push_back({ line, column, -1, message });
 }
 
-SemanticAnalyzer::SemanticAnalyzer() : nextstat(START_STMT_ADDR + 1)
+SemanticAnalyzer::SemanticAnalyzer() : nextstat(START_STMT_ADDR/* + 1*/)
 {
 	proptr.push(&procedureList);
 }
@@ -496,6 +501,7 @@ void SemanticAnalyzer::analyze(const Production& prod)
 			backpatch(stmtnode2->nextlist, nextstat);
 			emit(Quadruple{ "ret", "-", "-", "-" });
 		}
+		(*outPtable)[outPtable->size() - 1].symTable = t->table;
 	}
 	//1.1_4_2 基础程序----------N -> 空
 	else if (prod.left.name == "N" && prod.right.size() == 0) {
@@ -752,12 +758,13 @@ void SemanticAnalyzer::analyze(const Production& prod)
 
 		SymbolTable* stable = tblptr.top();//当前的符号表
 		SymbolTableEntry identifier = stable->get(nonterminal0->name);
+		SymbolTableEntry exprid;
 		if (identifier.type == ValueType::undefined)//符号表中没有
 			AddSemanticError(nonterminal0->line, nonterminal0->column, "未定义标识符" + nonterminal0->name);
 		if (identifier.kind == SymbolKind::Constant)//可赋值元素为常量
 			AddSemanticError(nonterminal0->line, nonterminal0->column, "表达式必须是可修改的左值");
 		else if (exprnode->kind == SymbolKind::Variable) {//表达式如果为变量，检查是否声明或赋值
-			SymbolTableEntry exprid = stable->get(get<string>(exprnode->name_value));
+			exprid = stable->get(get<string>(exprnode->name_value));
 			if (exprid.type == ValueType::undefined)
 				AddSemanticError(nonterminal0->line, nonterminal0->column, "未定义标识符\"" + get<string>(exprnode->name_value) + '\"');
 			if (exprid.isAssigned == false)
@@ -770,29 +777,27 @@ void SemanticAnalyzer::analyze(const Production& prod)
 			identifier.isAssigned = true;
 			stable->update(identifier);
 		}
-		//if (identifier.type == ValueType::undefined)//符号表中没有
-		//	AddSemanticError(nonterminal0->line, nonterminal0->column, "未定义标识符\"" + nonterminal0->name + '\"');
-		//ValueType exprtype;
-		//if (identifier.kind == SymbolKind::Constant) {//可赋值元素为常量
-		//	AddSemanticError(nonterminal0->line, nonterminal0->column, "表达式必须是可修改的左值");
-		//	exprtype = exprnode->type;
-		//}
-		//if (exprnode->kind == SymbolKind::Variable) {//表达式如果为变量，检查是否声明或赋值
-		//	SymbolTableEntry exprid = stable->get(get<string>(exprnode->name_value));
-		//	if (exprid.type == ValueType::undefined)
-		//		AddSemanticError(nonterminal0->line, nonterminal0->column, "未定义标识符\"" + get<string>(exprnode->name_value) + '\"');
-		//	if (exprid.isAssigned == false)
-		//		AddSemanticError(nonterminal0->line, nonterminal0->column, "表达式右值未赋值");
-		//	exprtype = exprid.type;
-		//}
-		//if (identifier.type != exprtype)//等号两侧类型不匹配
-		//	AddSemanticError(nonterminal0->line, nonterminal0->column, "不存在从\"右值\"到\"左值\"的适当转换函数");
-		//if (identifier.type == none) {
-		//	identifier.type = exprtype;
-		//	identifier.isAssigned = true;
-		//	stable->update(identifier);
-		//}
-		emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal0->name });//只实现i32
+		if (identifier.type == ValueType::constRef_i32 || identifier.type == ValueType::mutRef_i32) {//<可赋值元素>为引用类型，不生成赋值语句，修改符号表：①被引用的符号表标记引用情况；②引用的符号表标记引用变量
+			if (exprnode->kind == SymbolKind::Variable) {//仅用于防止exprid为空值，对于<表达式>内容的错误判断（等号两侧类型匹配）在前已完成
+				//更新被引用变量符号表信息
+				if (identifier.type == ValueType::constRef_i32)//创建不可变引用
+					if (exprid.refKind == ReferenceKind::MutableReference)
+						AddSemanticError(nonterminal0->line, nonterminal0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::ImmutableReference;
+				else if (identifier.type == ValueType::mutRef_i32)//创建可变引用
+					if (exprid.refKind != ReferenceKind::NoReference)
+						AddSemanticError(nonterminal0->line, nonterminal0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::MutableReference;
+				stable->update(exprid);
+				//更新引用变量符号表信息
+				identifier.refID = get<string>(exprnode->name_value);
+				stable->update(identifier);
+			}
+		}
+		else//<类型>为引用，生成赋值语句
+			emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal0->name });//只实现i32
 	}
 	//2.3_1 变量声明赋值语句（前置规则0.1、0.2、0.3、1.2、3.1）----------<语句>-> <变量声明赋值语句>
 	else if (prod.left.name == "Line" && prod.right.size() == 1 && prod.right[0].name == "Identifier_Assign_Line") {
@@ -818,8 +823,10 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		nodeStack.push(move(astnode));
 
 		SymbolTable* stable = tblptr.top();//当前的符号表
+		SymbolTableEntry exprid;
+		SymbolTableEntry declarationid = { nonterminal1->name, nonterminal1->kind, nonterminal3->type, false, true, 0 };
 		if (exprnode->kind == SymbolKind::Variable) {//表达式如果为变量，检查是否声明或赋值
-			SymbolTableEntry exprid = stable->get(get<string>(exprnode->name_value));
+			exprid = stable->get(get<string>(exprnode->name_value));
 			if (exprid.type == ValueType::undefined)
 				AddSemanticError(astnode0->line, astnode0->column, "未定义标识符" + get<string>(exprnode->name_value));
 			if (exprid.isAssigned == false)
@@ -828,12 +835,31 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		if (nonterminal3->type != exprnode->type)//<类型>与<表达式>类型不匹配
 			AddSemanticError(astnode0->line, astnode0->column, "不存在从\"右值\"到\"左值\"的适当转换函数");
 
+		if (nonterminal3->type == ValueType::constRef_i32 || nonterminal3->type == ValueType::mutRef_i32) {//<类型>为引用，不生成赋值语句，修改符号表：①被引用的符号表标记引用情况；②引用的符号表标记引用变量
+			if (exprnode->kind == SymbolKind::Variable) {//仅用于防止exprid为空值，对于<表达式>内容的错误判断（等号两侧类型匹配）在前已完成
+				//更新被引用变量符号表信息
+				if (nonterminal3->type == ValueType::constRef_i32)//创建不可变引用
+					if (exprid.refKind == ReferenceKind::MutableReference)
+						AddSemanticError(astnode0->line, astnode0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::ImmutableReference;
+				else if (nonterminal3->type == ValueType::mutRef_i32)//创建可变引用
+					if (exprid.refKind != ReferenceKind::NoReference)
+						AddSemanticError(astnode0->line, astnode0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::MutableReference;
+				stable->update(exprid);
+				//更新引用变量符号表信息
+				declarationid.refID = get<string>(exprnode->name_value);
+			}
+		}
+		else//<类型>为引用，生成赋值语句
+			emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal1->name });//只实现i32
 		bool defined = stable->isExist(nonterminal1->name);//当前符号表是否存在该变量名
 		if (defined)//更新
-			stable->update({ nonterminal1->name, nonterminal1->kind, nonterminal3->type, false, true, 0 });
+			stable->update(declarationid);
 		else
-			stable->put({ nonterminal1->name, nonterminal1->kind, nonterminal3->type, false, true, 0 });
-		emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal1->name });//只实现i32
+			stable->put(declarationid);
 	}
 	//2.3_3 赋值语句（前置规则0.3、1.2、3.1）----------<变量声明赋值语句> -> let <变量声明内部> '='<表达式> ';'
 	else if (prod.left.name == "Identifier_Assign_Line" && prod.right.size() == 5 && prod.right[0].name == TokenTypeToString(TokenType::LET) && prod.right[1].name == "Identifier_inside" && prod.right[2].name == TokenTypeToString(TokenType::Assignment) && prod.right[3].name == "Expression" && prod.right[4].name == TokenTypeToString(TokenType::Semicolon)) {
@@ -849,20 +875,41 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		nodeStack.push(move(astnode));
 
 		SymbolTable* stable = tblptr.top();//当前的符号表
+		SymbolTableEntry exprid;
 		if (exprnode->kind == SymbolKind::Variable) {//表达式如果为变量，检查是否声明或赋值
-			SymbolTableEntry exprid = stable->get(get<string>(exprnode->name_value));
+			exprid = stable->get(get<string>(exprnode->name_value));
 			if (exprid.type == ValueType::undefined)
 				AddSemanticError(astnode0->line, astnode0->column, "未定义标识符" + get<string>(exprnode->name_value));
 			if (exprid.isAssigned == false)
 				AddSemanticError(astnode0->line, astnode0->column, "表达式未赋值");
 		}
+
+		SymbolTableEntry declarationid = { nonterminal1->name, nonterminal1->kind, exprnode->type, false, true, 0 };
+		if (exprnode->type == ValueType::constRef_i32 || exprnode->type == ValueType::mutRef_i32) {//<表达式>为引用，不生成赋值语句，修改符号表：①被引用的符号表标记引用情况；②引用的符号表标记引用变量
+			if (exprnode->kind == SymbolKind::Variable) {//仅用于防止exprid为空值，对于<表达式>内容的错误判断（等号两侧类型匹配）在前已完成
+				//更新被引用变量符号表信息
+				if (exprnode->type == ValueType::constRef_i32)//创建不可变引用
+					if (exprid.refKind == ReferenceKind::MutableReference)
+						AddSemanticError(astnode0->line, astnode0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::ImmutableReference;
+				else if (exprnode->type == ValueType::mutRef_i32)//创建可变引用
+					if (exprid.refKind != ReferenceKind::NoReference)
+						AddSemanticError(astnode0->line, astnode0->column, "可变引用不能和其他的引用共存");
+					else
+						exprid.refKind = ReferenceKind::MutableReference;
+				stable->update(exprid);
+				//更新引用变量符号表信息
+				declarationid.refID = get<string>(exprnode->name_value);
+			}
+		}
+		else//<类型>为引用，生成赋值语句
+			emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal1->name });//只实现i32
 		bool defined = stable->isExist(nonterminal1->name);//当前符号表是否存在该变量名
 		if (defined)//更新
-			stable->update({ nonterminal1->name, nonterminal1->kind, exprnode->type, false, true, 0 });
+			stable->update(declarationid);
 		else
-			stable->put({ nonterminal1->name, nonterminal1->kind, exprnode->type, false, true, 0 });
-
-		emit(Quadruple{ "=", exprnode->kind == SymbolKind::Constant ? to_string(get<int>(get<TokenValue>(exprnode->name_value))) : get<string>(exprnode->name_value), "-", nonterminal1->name });//只实现i32
+			stable->put(declarationid);
 	}
 	//3.1_1 基本表达式（前置规则0.3）----------<语句> -> <表达式> ';'
 	else if (prod.left.name == "Line" && prod.right.size() == 2 && prod.right[0].name == "Expression" && prod.right[1].name == TokenTypeToString(TokenType::Semicolon)) {
@@ -1364,6 +1411,152 @@ void SemanticAnalyzer::analyze(const Production& prod)
 		unique_ptr<BridgeNode> nonterminal = make_unique<BridgeNode>(idnode->line, idnode->column, SymbolKind::Constant, idnode->name);
 		nodeStack.push(move(nonterminal));
 	}
+	////6.2_0 借用和引用（前置规则3.1、6.1）----------<可赋值元素> -> '*' <ID>
+	//else if (prod.left.name == "Assignable_element" && prod.right.size() == 2 && prod.right[0].name == TokenTypeToString(TokenType::Multiplication) && prod.right[1].name == "Identifier") {
+	//	unique_ptr<Id> idnode = unique_ptr<Id>(static_cast<Id*>(nodeStack.top().release()));
+	//	nodeStack.pop();
+	//	nodeStack.pop();
+
+	//	SymbolTable* stable = tblptr.top();//当前的符号表
+	//	//string assignedName = idnode->name;
+	//	SymbolTableEntry refIdentifier = stable->get(idnode->name);
+	//	switch (refIdentifier.type) {
+	//	case ValueType::undefined:
+	//		AddSemanticError(idnode->line, idnode->column, "未定义标识符\"" + idnode->name + '\"');
+	//		break;
+	//	case ValueType::constRef_i32://不允许通过不可变引用修改原始数据
+	//		AddSemanticError(idnode->line, idnode->column, "不允许通过不可变引用\"" + idnode->name + "\"修改原始数据\"" + refIdentifier.refID + "\"");
+	//		break;
+	//	case ReferenceKind::MutableReference://允许通过可变引用修改原始数据
+	//		break;
+	//	default://不允许对非引用类型进行解引用
+	//		AddSemanticError(idnode->line, idnode->column, "不允许对非引用类型\"" + idnode->name + "\"进行解引用");
+	//		break;
+	//		//assignedName = refIdentifier.refID;
+	//		//break;
+	//	}
+	//	unique_ptr<BridgeNode> nonterminal = make_unique<BridgeNode>(idnode->line, idnode->column, refIdentifier.refID);//直接将别名替换为原名
+	//	nodeStack.push(move(nonterminal));
+	//}
+	//6.2_1 借用和引用（前置规则3.1、6.1）----------<因子> -> '*' <因子>
+	else if (prod.left.name == "Factor" && prod.right.size() == 2 && prod.right[0].name == TokenTypeToString(TokenType::Multiplication) && prod.right[1].name == "Factor") {
+		unique_ptr<ExprNode> exprnode1 = unique_ptr<ExprNode>(static_cast<ExprNode*>(nodeStack.top().release()));;
+		nodeStack.pop();
+		unique_ptr<ASTNode> astnode0 = unique_ptr<ASTNode>(static_cast<ASTNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+
+		unique_ptr<ExprNode> exprnode;
+		if (exprnode1->kind == SymbolKind::Constant || exprnode1->type != ValueType::constRef_i32 && exprnode1->type != ValueType::mutRef_i32) {
+			AddSemanticError(astnode0->line, astnode0->column, "不允许对非引用类型\"" + ((exprnode1->kind == SymbolKind::Constant) ? to_string(get<int>(get<TokenValue>(exprnode1->name_value))) : get<string>(exprnode1->name_value)) + "\"进行解引用");
+			if (exprnode1->kind == SymbolKind::Constant)// 复制一个同为常量的结点
+				exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, exprnode1->type, get<TokenValue>(exprnode1->name_value));
+			else// 仍保持为变量
+				exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, exprnode1->type, get<string>(exprnode1->name_value));
+		}
+		else {
+			SymbolTable* stable = tblptr.top();//当前的符号表
+			SymbolTableEntry refIdentifier = stable->get(get<string>(exprnode1->name_value));//只有变量为ref_i32类型
+			if (refIdentifier.type == ValueType::undefined)
+				AddSemanticError(astnode0->line, astnode0->column, "未定义标识符\"" + get<string>(exprnode1->name_value) + '\"');
+			exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, ValueType::_i32, refIdentifier.refID);//直接将别名替换为原名//<因子>不会作为表达式右值，因此无需考虑是否为（不）可变引用
+		}
+		nodeStack.push(move(exprnode));
+	}
+	//6.2_1 借用和引用（前置规则3.1、6.1）----------<因子> -> '&' mut <因子>
+	else if (prod.left.name == "Factor" && prod.right.size() == 3 && prod.right[0].name == TokenTypeToString(TokenType::BitAnd) && prod.right[1].name == TokenTypeToString(TokenType::MUT) && prod.right[2].name == "Factor") {
+		unique_ptr<ExprNode> exprnode2 = unique_ptr<ExprNode>(static_cast<ExprNode*>(nodeStack.top().release()));;
+		nodeStack.pop();
+		nodeStack.pop();
+		unique_ptr<ASTNode> astnode0 = unique_ptr<ASTNode>(static_cast<ASTNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+
+		ValueType vtype = ValueType::none;
+		unique_ptr<ExprNode> exprnode;
+		if (exprnode2->kind == SymbolKind::Constant) {
+			AddSemanticError(astnode0->line, astnode0->column, "仅允许从可变变量创建可变引用，\"" + to_string(get<int>(get<TokenValue>(exprnode2->name_value))) + "不是变量\"");
+			exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, vtype, get<TokenValue>(exprnode2->name_value));//i32引用类型存储的变量值为被引用变量名//'&' mut <因子>视为类似i32的“值”，可参与赋值等合法运算，而非变量
+		}
+		else {
+			SymbolTable* stable = tblptr.top();//当前的符号表
+			SymbolTableEntry exprid = stable->get(get<string>(exprnode2->name_value));//查找创建引用变量的原名
+			if (exprid.kind == SymbolKind::Constant)
+				AddSemanticError(astnode0->line, astnode0->column, "仅允许从可变变量创建可变引用，\"" + get<string>(exprnode2->name_value) + "不是可变变量\"");
+			//else
+			switch (exprid.type) {
+			case ValueType::_i32:
+				vtype = ValueType::mutRef_i32;
+				break;
+			default:
+				AddSemanticError(astnode0->line, astnode0->column, "为非i32类型变量创建可变引用");
+			}
+			exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, vtype, get<string>(exprnode2->name_value));//i32引用类型存储的变量值为被引用变量名//'&' mut <因子>视为类似i32的“值”，可参与赋值等合法运算，而非变量
+		}
+		nodeStack.push(move(exprnode));
+	}
+	//6.2_1 借用和引用（前置规则3.1、6.1）----------<因子> -> '&' <因子>
+	else if (prod.left.name == "Factor" && prod.right.size() == 2 && prod.right[0].name == TokenTypeToString(TokenType::BitAnd) && prod.right[1].name == "Factor") {
+		unique_ptr<ExprNode> exprnode2 = unique_ptr<ExprNode>(static_cast<ExprNode*>(nodeStack.top().release()));;
+		nodeStack.pop();
+		unique_ptr<ASTNode> astnode0 = unique_ptr<ASTNode>(static_cast<ASTNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+
+		ValueType vtype = ValueType::none;
+		unique_ptr<ExprNode> exprnode;
+		if (exprnode2->kind == SymbolKind::Constant) {
+			AddSemanticError(astnode0->line, astnode0->column, "仅允许从变量创建不可变引用，\"" + to_string(get<int>(get<TokenValue>(exprnode2->name_value))) + "不是变量\"");
+			exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, vtype, get<TokenValue>(exprnode2->name_value));//i32引用类型存储的变量值为被引用变量名//'&' <因子>视为类似i32的“值”，可参与赋值等合法运算，而非变量
+		}
+		else {
+			SymbolTable* stable = tblptr.top();//当前的符号表
+			SymbolTableEntry exprid = stable->get(get<string>(exprnode2->name_value));//查找创建引用变量的原名
+			switch (exprid.type) {
+			case ValueType::_i32:
+				vtype = ValueType::constRef_i32;
+				break;
+			default:
+				AddSemanticError(astnode0->line, astnode0->column, "为非i32类型变量创建不可变引用");
+			}
+			exprnode = make_unique<ExprNode>(astnode0->line, astnode0->column, vtype, get<string>(exprnode2->name_value));//i32引用类型存储的变量值为被引用变量名//'&' <因子>视为类似i32的“值”，可参与赋值等合法运算，而非变量
+		}
+		nodeStack.push(move(exprnode));
+	}
+	//6.2_2 借用和引用（前置规则3.1、6.1）----------<类型>-> '&' mut <类型>
+	else if (prod.left.name == "Type" && prod.right.size() == 3 && prod.right[0].name == TokenTypeToString(TokenType::BitAnd) && prod.right[1].name == TokenTypeToString(TokenType::MUT) && prod.right[2].name == "Type") {
+		unique_ptr<BridgeNode> nonterminal2 = unique_ptr<BridgeNode>(static_cast<BridgeNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+		nodeStack.pop();
+		unique_ptr<ASTNode> astnode0 = unique_ptr<ASTNode>(static_cast<ASTNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+
+		ValueType vtype = ValueType::none;
+		switch (nonterminal2->type) {
+		case ValueType::_i32:
+			vtype = ValueType::mutRef_i32;
+			break;
+		default:
+			AddSemanticError(astnode0->line, astnode0->column, "为非i32类型创建可变引用");
+		}
+		unique_ptr<BridgeNode> nonterminal = make_unique<BridgeNode>(astnode0->line, astnode0->column, vtype, 0);
+		nodeStack.push(move(nonterminal));
+	}
+	//6.2_2 借用和引用（前置规则3.1、6.1）----------<类型>-> '&' <类型>
+	else if (prod.left.name == "Type" && prod.right.size() == 2 && prod.right[0].name == TokenTypeToString(TokenType::BitAnd) && prod.right[1].name == "Type") {
+		unique_ptr<BridgeNode> nonterminal2 = unique_ptr<BridgeNode>(static_cast<BridgeNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+		unique_ptr<ASTNode> astnode0 = unique_ptr<ASTNode>(static_cast<ASTNode*>(nodeStack.top().release()));
+		nodeStack.pop();
+
+		ValueType vtype = ValueType::none;
+		switch (nonterminal2->type) {
+		case ValueType::_i32:
+			vtype = ValueType::constRef_i32;
+			break;
+		default:
+			AddSemanticError(astnode0->line, astnode0->column, "为非i32类型创建可变引用");
+		}
+		unique_ptr<BridgeNode> nonterminal = make_unique<BridgeNode>(astnode0->line, astnode0->column, vtype, 0);
+		nodeStack.push(move(nonterminal));
+	}
 	else {
 		AddSemanticError(INT_MAX, INT_MAX, "产生式未匹配，未执行语义分析");
 	}
@@ -1401,4 +1594,57 @@ const std::vector<Quadruple>& SemanticAnalyzer::GetqList() const
 const std::vector<ParseError>& SemanticAnalyzer::GetSemanticErrors() const
 {
 	return semanticErrors;
+}
+
+void SemanticAnalyzer::resultToFile() const
+{
+	ofstream quadsf("rust/intermediateCodes.txt");
+	quadsf << START_STMT_ADDR << endl;
+	for (const Quadruple& q : qList)
+		quadsf << q.op << ' ' << q.arg1 << ' ' << q.arg2 << ' ' << q.result << endl;
+	quadsf.close();
+
+	ofstream tablef("rust/symTable.txt");
+	//DFS输出函数表
+	stack<const ProcedureTableEntry*> prolist;//存储每个函数表项
+	//最外层函数（即直接定义的函数，无嵌套）的具体内容（函数表项）入栈
+	for (const ProcedureTableEntry& p : procedureList)
+		prolist.push(&p);
+	tablef << "p->ID" << ' ' << /*"p->addr"*/START_STMT_ADDR << endl
+		<< 0 << endl//语义分析未支持全局遍历
+		<< procedureList.size() << endl;
+	//开始DFS
+	while (!prolist.empty()) {
+		//输出栈顶函数的信息，包括：本函数名称、地址；本函数变量表信息；子函数各自递归输出信息
+		const ProcedureTableEntry* p = prolist.top();
+		prolist.pop();
+		//输出当前函数的信息
+
+		//输出本函数的名字与起始四元式地址
+		tablef << p->ID << ' ' << p->addr << endl;
+		//输出本函数自己定义的变量信息
+		tablef << p->symTable.size() << endl;
+		for (const SymbolTableEntry& s : p->symTable)
+			tablef << s.ID << ' ' << s.addr << ' ' << s.type << ' ' << (s.isNormal ? 1 : 0) << endl;
+		//输出子函数信息（首先输出子函数个数）
+		tablef << p->subProcedureTable.size() << endl;
+		//递归输出全部子函数信息
+		for (const ProcedureTableEntry& subp : p->subProcedureTable)
+			prolist.push(&subp);
+	}
+	tablef.close();
+	/****************************************输出格式***************************************
+	* def 函数表
+	函数名 函数起始地址
+	变量数量
+	变量1名 变量1地址
+	变量2名 变量2地址
+	……
+	变量n名 变量n地址
+	子函数数量
+		子函数函数表1（递归）
+		子函数函数表2（递归）
+		……
+		子函数函数表n（递归）
+	*****************************************************************************************/
 }

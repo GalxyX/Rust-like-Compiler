@@ -1,5 +1,6 @@
 #include "LexicalAnalyzer.h"
 #include "Parser.h"
+#include "ObjectCodeGenerator.h"
 #include <string>
 using namespace std;
 
@@ -217,84 +218,102 @@ json SemanticErrorsJson(const Parser& parser)
 	return errors;
 }
 
-int main() {
-	//从标准输入读取整个程序，以EOF结尾
-	string program, line;
-	while (getline(cin, line))
-		program += line + "\n";
-	//创建InputBuffer对象
-	InputBuffer input(program);
-	input.filter_comments();
-	//词法分析
-	Scanner scanner(input);
-	scanner.LexicalAnalysis();
-	vector<Token> tokens = scanner.GetTokens();
-	//输出词法分析结果
-	json result;
-	result["tokens"] = TokensJson(tokens);
-	//语法分析
-	InputBuffer syntaxInput(program);
-	syntaxInput.filter_comments();
-	Scanner parserScanner(syntaxInput);
-	string grammar = "rust/grammar.txt"; // 假设语法文件路径
-	Parser parser(parserScanner, grammar);
-	//Parser parser(parserScanner, "rust/parser.galp", true);
-	parser.SyntaxAnalysis();
-	//输出FIRST集合
-	result["firsts"] = FirstsJson(parser);
-	//LR1项目集
-	result["LR1items"] = LR1ItemsJson(parser);
-	// 获取Action表并转换为JSON
-	result["actiontable"] = ActionTableJson(parser);
-	// 获取Goto表
-	result["gototable"] = GotoTableJson(parser);
-	// 获取规约产生式序列
-	result["reduceProductions"] = ReduceProductionsJson(parser);
-	// 输出语法分析错误
-	result["parseErrors"] = ParseErrorsJson(parser);
-	// 输出四元式
-	result["quadruples"] = QuadruplesJson(parser);
-	// 输出语义错误
-	result["semanticErrors"] = SemanticErrorsJson(parser);
+int main(int argc, char** argv)
+{
+	system("chcp 65001");
+	filesystem::path path = "rust/test.rs";//Rust源程序路径
+	string grammar = "rust/grammar.txt";//语法分析语法文件路径
 
-	cout << result.dump(2) << endl;
-	return 0;
+	if (argc >= 2 && string(argv[1]) == "lexical") {
+		//词法分析
+		InputBuffer* inputb;
+		inputb = new(nothrow)InputBuffer(path);
+		inputb->filter_comments();
+		Scanner scanner(*inputb);
+		scanner.LexicalAnalysis();
+		//输出词法分析结果
+		vector<Token> tokens = scanner.GetTokens();
+		delete inputb;
+		ofstream of1("rust/result/LexicalAnalyzer.json");
+		of1 << TokensJson(tokens).dump(2) << '\n';
+		of1.close();
+	}
+	else {
+		//语法分析
+		InputBuffer syntaxInput(path);
+		syntaxInput.filter_comments();
+		Scanner parserScanner(syntaxInput);
+		//Parser parser(parserScanner, grammar);
+		Parser parser(parserScanner, "rust/parser.galp", true);
+		parser.SyntaxAnalysis();
+		////输出FIRST集合
+		//result["firsts"] = FirstsJson(parser);
+		////LR1项目集
+		//result["LR1items"] = LR1ItemsJson(parser);
+		// 获取Action表并转换为JSON
+		ofstream of2("rust/result/action.json");
+		of2 << ActionTableJson(parser).dump(2) << '\n';
+		of2.close();
+		// 获取Goto表
+		ofstream of3("rust/result/goto.json");
+		of3 << GotoTableJson(parser).dump(2) << '\n';
+		of3.close();
+
+		if (argc >= 2 && string(argv[1]) == "grammar") {
+			return 0;
+		}
+
+		// 获取规约产生式序列
+		ofstream of4("rust/result/process.json");
+		of4 << ReduceProductionsJson(parser).dump(2) << '\n';
+		of4.close();
+		// 输出语法分析错误
+		ofstream of5("rust/result/perror.json");
+		of5 << ParseErrorsJson(parser).dump(2) << '\n';
+		of5.close();
+		// 输出四元式
+		ofstream of6("rust/result/quads.json");
+		of6 << QuadruplesJson(parser).dump(2) << '\n';
+		of6.close();
+		// 输出语义错误
+		ofstream of7("rust/result/serror.json");
+		of7 << SemanticErrorsJson(parser).dump(2) << '\n';
+		of7.close();
+
+		if (argc >= 2 && string(argv[1]) == "parse") {
+			return 0;
+		}
+		else if (argc < 2 || argc >= 2 && string(argv[1]) == "target") {
+			//语义分析
+			parser.resultToFile();
+			if (parser.GetSemanticErrors().empty()) {//当无语法及语义错误时，执行目标代码生成
+				ObjectCodeGenerator generator("rust/intermediateCodes.txt", "rust/symTable.txt");
+				generator.ConvertObjectCode("rust/result/objectCode.txt");
+			}
+			else {
+				ofstream of8("rust/result/objectCode.txt", ofstream::out | ofstream::trunc);
+				of8.close();
+			}
+		}
+
+		return 0;
+	}
 }
 #else
 int main(int argc, char** argv)
 {
-	InputBuffer* inputb;
-	filesystem::path path = "rust/test.rs";
-	string grammar = "rust/grammar.txt";
-
-	if (argc == 3 && !strcmp(argv[1], "-f"))
-		path = argv[2];
-	else if (argc == 2 && !strcmp(argv[1], "-s"))
-		while (true) {
-			string s;
-			getline(cin, s);
-			InputBuffer newinput(s);
-			newinput.filter_comments();
-
-			Scanner newscanner(newinput);
-			newscanner.LexicalAnalysis();
-			//vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
-			vector<Token> tokens = newscanner.GetTokens();
-			for (unsigned int i = 0; i < tokens.size(); ++i)
-				if (tokens[i].type == Identifier)
-					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<string>(tokens[i].value) << ")："/* << SymbolTable[get<unsigned int>(tokens[i].value)].ID*/ << endl;
-				else
-					cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')' << endl;
-		}
-	//词法分析
-	inputb = new(nothrow)InputBuffer(path);
-	inputb->filter_comments();
-
-	Scanner newscanner(*inputb);
-	newscanner.LexicalAnalysis();
-	//vector<SymbolTableEntry> SymbolTable = newscanner.GetSymbolTable();
-	vector<Token> tokens = newscanner.GetTokens();
-	//// 在打印tokens信息时添加位置信信息
+	system("chcp 65001");
+	filesystem::path path = "rust/test.rs";//Rust源程序路径
+	string grammar = "rust/grammar.txt";//语法分析语法文件路径
+	////词法分析
+	//InputBuffer* inputb;
+	//inputb = new(nothrow)InputBuffer(path);
+	//inputb->filter_comments();
+	//Scanner newscanner(*inputb);
+	//newscanner.LexicalAnalysis();
+	////词法分析部分结果输出
+	//vector<Token> tokens = newscanner.GetTokens();
+	//// 在打印tokens信息时添加位置信息
 	//for (unsigned int i = 0; i < tokens.size(); ++i) {
 	//	cout << " [行:" << tokens[i].line << " 列:" << tokens[i].column << " 长度:" << tokens[i].length << "]    ";
 	//	if (tokens[i].type == Identifier)
@@ -307,27 +326,35 @@ int main(int argc, char** argv)
 	//		cout << '(' << TokenTypeToString(tokens[i].type) << ' ' << get<int>(tokens[i].value) << ')';
 	//	cout << endl;
 	//}
-	delete inputb;
+	//delete inputb;
+
 	//语法分析
 	InputBuffer* inputp = new(nothrow)InputBuffer(path);
 	inputp->filter_comments();
 	Scanner pscanner(*inputp);
 	//Parser newparser(pscanner, grammar);
-	Parser newparser(pscanner, "rust/parser.galp", true);
 	//newparser.saveToFile("rust/parser.galp");
+	Parser newparser(pscanner, "rust/parser.galp", true);
 	newparser.SyntaxAnalysis();
-	newparser.printSyntaxTree();
+	//语法分析部分结果输出
+	//newparser.printSyntaxTree();
+	//int address = 100;
+	//for (const auto& q : newparser.GetqList()) {
+	//	cout << address << ":";
+	//	cout << "(" << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ")" << endl;
+	//	address++;
+	//}
+	//for (const auto& err : newparser.GetSemanticErrors())
+	//	std::cout << "Error at line " << err.line << ", column " << err.column << ", length " << err.length << ": " << err.message << std::endl;
 
-	int address = 100;
-	for (const auto& q : newparser.GetqList()) {
-		cout << address << ":";
-		cout << "(" << q.op << ", " << q.arg1 << ", " << q.arg2 << ", " << q.result << ")" << endl;
-		address++;
-	}
-	for (const auto& err : newparser.GetSemanticErrors())
-		std::cout << "Error at line " << err.line << ", column " << err.column << ", length " << err.length << ": " << err.message << std::endl;
-
+	//目标代码生成
+	newparser.resultToFile();
 	delete inputp;
+	if (newparser.GetSemanticErrors().empty()) {//当无语法及语义错误时，执行目标代码生成
+		ObjectCodeGenerator q("rust/intermediateCodes.txt", "rust/symTable.txt");
+		q.ConvertObjectCode();
+	}
+
 	return 0;
 }
 #endif // BACKEND

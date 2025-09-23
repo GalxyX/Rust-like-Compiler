@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <stack>
 #include "LexicalAnalyzer.h"
 struct ParseError;
@@ -17,12 +16,21 @@ struct Production;
 ********************************************************************************/
 //符号（变量）类型
 enum ValueType {
-	undefined, none, _i8, _u8, _i16, _u16, _i32, _u32, _i64, _u64, _i128, _u128, _isize, _usize, _f32, _f64, _bool, _char, _unit, _array, _procedure
+	undefined, none, _i8, _u8, _i16, _u16, _i32, _u32, _i64, _u64, _i128, _u128, _isize, _usize, _f32, _f64, _bool, _char, _unit, _array, _procedure,
+	constRef_i32, mutRef_i32
 };
 //常量/变量
 enum SymbolKind {
 	Constant, Variable
 };
+
+//引用类型
+enum ReferenceKind {
+	NoReference,        //无引用
+	MutableReference,   //可变引用 (&mut)
+	ImmutableReference  //不可变引用 (&)
+};
+
 //符号（变量）表表项
 struct SymbolTableEntry {
 	std::string ID;									//符号（变量）名称
@@ -32,6 +40,8 @@ struct SymbolTableEntry {
 	bool isAssigned;								//是否已赋值
 	//TokenValue value;								//符号（变量）的值
 	size_t addr;									//符号（变量）存储地址
+	std::string refID;								//仅当符号（变量）为引用类时有效，其引用的符号（变量）的名称
+	enum ReferenceKind refKind = NoReference;		//符号（变量）是否有可变/不可变引用
 };
 
 //符号（变量）表
@@ -59,6 +69,7 @@ public:
 	std::string ID;									//函数名称
 	enum ValueType returntype;						//返回类型
 	ProcedureTable subProcedureTable;				//子函数函数表指针
+	std::vector<SymbolTableEntry> symTable;			//函数的所有变量
 	std::vector<ValueType> paratype;				//形参类型
 	size_t addr;									//函数起始四元式地址
 	//bool isRturned;
@@ -243,5 +254,6 @@ public:
 	void addJumpToMain();																//在所有四元式之前添加跳转至函数名为main的函数
 	const std::vector<Quadruple>& GetqList() const;										//返回语义分析结果，{所有四元式}qList
 	const std::vector<ParseError>& GetSemanticErrors() const;							//返回{语义分析错误}semanticErrors
+	void resultToFile() const;
 };
 

@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LexicalAnalyzer.h" />
+    <ClInclude Include="ObjectCodeGenerator.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="SemanticAnalyzer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LexicalAnalyzer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ObjectCodeGenerator.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="SemanticAnalyzer.cpp" />
   </ItemGroup>
