@@ -1,0 +1,85 @@
+Program -> M DeclarationString
+M -> Epsilon
+0.1
+Identifier_inside -> mut ID
+0.2
+Type -> i32
+0.3
+Assignable_element -> ID
+1.1
+DeclarationString -> Epsilon | Declaration DeclarationString
+Declaration -> Function_Declaration
+Function_Declaration -> N Function_Head_Declaration Line_Block
+Function_Head_Declaration -> fn ID ( Formal_Parameter_List )
+Formal_Parameter_List -> Epsilon
+Line_Block -> { Line_String }
+Line_String -> Epsilon
+1.2
+Line_String -> Line Q Line_String
+Q -> Epsilon
+Line -> ;
+N -> Epsilon
+1.3
+Line -> Return_Line
+Return_Line -> return ;
+1.4
+Formal_Parameter_List -> Formal_Parameter | Formal_Parameter , Formal_Parameter_List
+Formal_Parameter -> Identifier_inside : Type
+3.1
+Line -> Expression ;
+Expression -> Plus_Expression
+Plus_Expression -> Term
+Term -> Factor
+Factor -> Element
+Element -> NUM | Assignable_element | ( Expression )
+1.5
+Function_Head_Declaration -> fn ID ( Formal_Parameter_List ) -> Type
+Return_Line -> return Expression ;
+2.1
+Line -> Identifier_Line
+Identifier_Line -> let Identifier_inside : Type ;
+Identifier_Line -> let Identifier_inside ;
+2.2
+Line -> Assign_Line
+Assign_Line -> Assignable_element = Expression ;
+2.3
+Line -> Identifier_Assign_Line
+Identifier_Assign_Line -> let Identifier_inside : Type = Expression ;
+Identifier_Assign_Line -> let Identifier_inside = Expression ;
+3.2
+Expression -> Expression Comparison Plus_Expression
+Plus_Expression -> Plus_Expression AS_operator Term
+Term -> Term MD_operator Factor
+Comparison -> < | <= | > | >= | == | !=
+AS_operator -> + | -
+MD_operator -> * | /
+3.3
+Element -> ID ( Real_Parameter_List )
+Real_Parameter_List -> Epsilon | Expression | Expression , Real_Parameter_List
+4.1
+Line -> IF_Line
+IF_Line -> if Expression B Q Line_Block ELSE_Part
+ELSE_Part -> Epsilon | P else Q Line_Block
+4.2
+ELSE_Part -> P else if Q Expression B Q Line_Block ELSE_Part
+B -> Epsilon
+P -> Epsilon
+5.1
+Line -> Cycle_Line
+Cycle_Line -> While_Line
+While_Line -> while Q Expression B Q Line_Block
+5.2
+Cycle_Line -> For_Line
+Identifier_Iterative_Structure -> for Identifier_inside in Iterative_Structure
+For_Line -> Identifier_Iterative_Structure Q Line_Block
+Iterative_Structure -> Expression .. Expression
+5.3
+Cycle_Line -> Loop_Line
+Loop_Line -> loop Q Line_Block
+5.4
+Line -> break ; | continue ;
+6.1
+Identifier_inside -> ID
+6.2
+Factor -> * Factor | & mut Factor | & Factor
+Type -> & mut Type | & Type
