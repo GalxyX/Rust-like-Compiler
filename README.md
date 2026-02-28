@@ -129,21 +129,65 @@ Rust-like-Compiler 是一个基于 C++ 开发的简单类 Rust 语言编译器�
 - `objectCode.txt`: 生成的 MIPS 汇编代码
 - `*.json`: 各阶段的详细分析数据（需开启后端模式）
 
+## 🎨 图形化界面 (GUI)
+
+本项目提供一个基于 Electron 的前端可视化界面，用于展示编译结果（包括 Token 列表、Action/Goto 表、实时分析过程与生成代码等）。
+
+### 快速启动
+
+1. 在 `main.cpp` 中启用 `BACKEND` 宏，并编译运行后端项目。
+2. 将生成的 `Rust-like-Compiler.exe` 放置在前端 `gui/` 目录下。
+3. 将生成的 `parser.galp` 放置在 `gui/rust/` 目录下。
+4. 进入 `gui` 文件夹：
+   ```bash
+   cd gui
+   ```
+5. 安装前端依赖：
+   ```bash
+   npm install
+   ```
+6. 启动 Electron 前端界面：
+   ```bash
+   npm run dev
+   ```
+
+### 打包
+
+如需打包前端为独立的 exe 应用，可以根据 `package.json` 中的构建脚本运行如下命令：
+
+```bash
+npm run build
+```
+
+生成的可执行文件将位于 `gui/dist/` 目录下，可直接运行。
+
 ## 📂 项目结构 (Project Structure)
 
 ```text
-Rust-like-Compiler/
-├── main.cpp                # 程序入口，控制编译流程
-├── LexicalAnalyzer.cpp/h   # 词法分析器 (Scanner)
-├── Parser.cpp/h            # 语法分析器 (LR1 Parser)
-├── SemanticAnalyzer.cpp/h  # 语义分析器
-├── ObjectCodeGenerator.cpp/h # 目标代码生成器 (MIPS)
-├── json.hpp                # JSON 库头文件
-└── rust/                   # 资源目录
-    ├── test.rs             # 测试用例源代码
-    ├── grammar.txt         # 语法规则定义
-    ├── parser.galp         # 语法分析状态机定义（生成）
-    └── result/             # 编译结果输出目录
+/
+├── Rust-like-Compiler/     # 编译器核心代码
+│   ├── main.cpp            # 程序入口，控制编译流程
+│   ├── LexicalAnalyzer.*   # 词法分析器 (Scanner)
+│   ├── Parser.*            # 语法分析器 (LR1 Parser)
+│   ├── SemanticAnalyzer.*  # 语义分析器
+│   ├── ObjectCodeGenerator.* # 目标代码生成器 (MIPS)
+│   ├── json.hpp            # JSON 库头文件
+│   └── rust/               # 资源目录
+│       ├── test.rs         # 测试用例源代码
+│       ├── grammar.txt     # 语法规则定义
+│       ├── parser.galp     # 语法分析表二进制缓存（生成）
+│       └── result/         # 编译结果输出目录
+├── gui/                    # 前端可视化界面
+│   ├── main.js             # Electron 主进程入口
+│   ├── index.html/style.css # UI 渲染层与样式定义
+│   ├── package.json        # 前端依赖与脚本配置
+│   └── rust/               # 工作目录
+│       ├── test.rs         # 前端界面输入源代码
+│       ├── grammar.txt     # 语法规则定义（与后端一致）
+│       └── result/         # 编译结果输出目录
+├── README.md               # 项目说明文档
+├── LICENSE.txt             # 开源许可证
+└── .sln                    # Visual Studio 解决方案文件
 ```
 
 ## 📝 语言示例文法 (Example Grammar)

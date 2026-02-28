@@ -1,0 +1,77 @@
+{
+  "name": "rust-compiler-desktop",
+  "version": "0.1.0",
+  "description": "类Rust语言编译器桌面应用",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "chcp 65001 && electron .",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "dev": "chcp 65001 && electron . --dev"
+  },
+  "keywords": [
+    "compiler",
+    "rust",
+    "electron",
+    "desktop"
+  ],
+  "author": "GalxyX",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.tongji.rust-compiler",
+    "productName": "类Rust语言编译器",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules",
+      "!dist"
+    ],
+    "extraResources": [
+      {
+        "from": "Rust-like-Compiler.exe",
+        "to": "."
+      },
+      {
+        "from": "rust",
+        "to": "rust"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "forceCodeSigning": false,
+    "afterSign": null,
+    "compression": "store",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ]
+    },
+    "publish": null
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3"
+  }
+}
